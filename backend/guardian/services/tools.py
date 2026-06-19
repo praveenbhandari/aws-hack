@@ -20,6 +20,13 @@ TOOL_NAMES = frozenset({
     "describe_streetview",
 })
 
+# Phrasings an LLM uses for "from where I am" — these can't be geocoded, so we
+# substitute the caller's GPS coordinates (a "lat,lng" string the Directions API accepts).
+_CURRENT_LOCATION_ALIASES = frozenset({
+    "", "current", "current location", "currentlocation", "here", "my location",
+    "my current location", "current position", "where i am", "this location",
+})
+
 
 async def dispatch_tool(name: str, params: dict[str, Any], *, use_mock: bool = False) -> dict[str, str]:
     if use_mock:
@@ -46,9 +53,17 @@ async def dispatch_tool(name: str, params: dict[str, Any], *, use_mock: bool = F
         }
 
     if name == "get_safe_routes":
+        origin = str(params.get("origin") or "").strip()
+        ulat, ulng = params.get("user_latitude"), params.get("user_longitude")
+        if origin.lower() in _CURRENT_LOCATION_ALIASES:
+            origin = (
+                f"{float(ulat)},{float(ulng)}"
+                if ulat is not None and ulng is not None
+                else f"{SF_LAT},{SF_LNG}"
+            )
         data = await plan_safe_routes(
             {
-                "origin": params.get("origin", "Union Square, San Francisco"),
+                "origin": origin,
                 "destination": params.get("destination", "Mission Dolores Park, San Francisco"),
                 "mode": params.get("mode", "walking"),
                 "includeNavigationCues": params.get("includeNavigationCues", True),
