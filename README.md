@@ -25,7 +25,7 @@ A **Vite web UI** (`frontend/web/`) provides the full map + route comparison in 
 aws-hack/
 ├── API_CONTRACT.md   ← frozen seam — read this first
 ├── README.md
-├── backend/          ← Node/Express Companion API (:3001), crime ingest, Vapi webhook, Nebius proxy
+├── backend/          ← Python/FastAPI Companion API (:3001), crime ingest, Vapi webhook, Nebius proxy
 ├── frontend/         ← Expo mobile app (root) + Vite web map UI (web/)
 └── data/             ← SFPD historical crime CSV (+ backend ingest scripts under backend/data/)
 ```
@@ -37,7 +37,10 @@ aws-hack/
 **Terminal 1 — backend**
 
 ```bash
-cd backend && npm install && npm run dev   # http://localhost:3001
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn guardian.main:app --reload --port 3001   # http://localhost:3001
 ```
 
 **Terminal 2 — web map UI**
@@ -52,8 +55,9 @@ Open http://localhost:5173 — map, crime heatmap, route comparison. The dev ser
 
 ```bash
 cd backend
-npm run ingest -- --seed-only
-USE_MOCK=false npm run dev
+source .venv/bin/activate
+python scripts/ingest_hotspots.py --seed-only
+USE_MOCK=false uvicorn guardian.main:app --reload --port 3001
 ```
 
 ## Quick start — Expo mobile
@@ -71,7 +75,7 @@ Point the app at `EXPO_PUBLIC_COMPANION_API_BASE_URL` (see `frontend/.env.exampl
 | Mobile app | **React Native (Expo)** | `frontend/` |
 | Web map UI | **React + Vite** | `frontend/web/` |
 | Map + routing | **Google Maps** | Directions, Geocoding (server in `backend/`) |
-| Orchestrator | **Companion API** | `backend/` (Node/Express) |
+| Orchestrator | **Companion API** | `backend/` (Python/FastAPI) |
 | AI brain + safety scoring | **Nebius** (OpenAI-compatible LLM) | scoring + explanations; `/chat/completions` proxy |
 | Voice | **Vapi** (`@vapi-ai/react-native`) | `frontend/` |
 

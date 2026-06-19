@@ -22,6 +22,7 @@ build/
 
 # Generated
 backend/data/seed-hotspots.json
+backend/guardian/cache/live/
 
 # Logs
 *.log
@@ -36,3 +37,18 @@ yarn-error.log*
 
 # Large crime dataset — download locally, do not commit
 data/*.csv
+
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf

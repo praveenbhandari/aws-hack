@@ -30,13 +30,13 @@ export function formatDuration(s: number): string {
 }
 
 export function hotspotRadius(weight: number, severity: number): number {
-  return 8 + weight * 24 + severity * 2;
+  return 3 + weight * 10 + severity * 1.2;
 }
 
 export function hotspotFill(weight: number, severity: number): string {
-  const t = Math.min(1, weight * 0.6 + severity / 10);
-  if (t > 0.7) return "#ef4444";
-  if (t > 0.4) return "#f97316";
-  if (t > 0.2) return "#f59e0b";
-  return "#eab308";
+  const t = Math.min(1, weight * 0.8 + severity / 12);
+  if (t > 0.55) return "#ef4444";
+  if (t > 0.3) return "#f97316";
+  if (t > 0.12) return "#f59e0b";
+  return "#facc15";
 }

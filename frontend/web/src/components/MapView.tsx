@@ -54,9 +54,9 @@ export function MapView({ hotspots, routes, selectedRouteId, origin, destination
           pathOptions={{
             color: hotspotFill(h.weight, h.severity),
             fillColor: hotspotFill(h.weight, h.severity),
-            fillOpacity: 0.45,
-            weight: 1,
-            opacity: 0.8,
+            fillOpacity: 0.62,
+            weight: 0.5,
+            opacity: 0.85,
           }}
         >
           <Tooltip className="route-tooltip" direction="top">

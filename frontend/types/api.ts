@@ -36,6 +36,7 @@ export type SafeRouteRequest = {
   origin: LatLng | string;
   destination: LatLng | string;
   mode: RouteMode;
+  avoidHeatmap?: boolean;
 };
 
 export type Route = {

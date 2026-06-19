@@ -108,7 +108,14 @@ export function RoutePanel({
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-medium text-sm">{route.summary || `Route ${i + 1}`}</p>
+                  <p className="font-medium text-sm">
+                    {route.summary || `Route ${i + 1}`}
+                    {route.reroutedAroundHeatmap && (
+                      <span className="ml-1.5 text-[10px] uppercase text-emerald-500 font-semibold">
+                        detour
+                      </span>
+                    )}
+                  </p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                     <span className="flex items-center gap-1">
                       <MapPin size={12} /> {formatDistance(route.distanceMeters)}

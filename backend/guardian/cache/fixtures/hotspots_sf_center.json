@@ -1,0 +1,17 @@
+{
+  "center": { "lat": 37.7749, "lng": -122.4194 },
+  "radiusMeters": 500,
+  "count": 159,
+  "hotspots": [
+    { "id": "d0805664-82b8-4a5f-9e55-3fad72727d08", "lat": 37.77514648438, "lng": -122.41925811768, "category": "Weapons Carrying Etc", "severity": 4, "occurredAt": "2023-08-29T12:00:00+00:00", "source": "sfpd", "weight": 0.185 },
+    { "id": "3676ad12-5228-449a-8db5-e14f8aff3f10", "lat": 37.77305221558, "lng": -122.41861724854, "category": "Robbery", "severity": 5, "occurredAt": "2023-08-31T12:00:00+00:00", "source": "sfpd", "weight": 0.139 },
+    { "id": "55387999-2334-47a9-988e-5f1bd812ee9e", "lat": 37.77615737915, "lng": -122.42115020752, "category": "Assault", "severity": 4, "occurredAt": "2023-09-16T12:00:00+00:00", "source": "sfpd", "weight": 0.118 },
+    { "id": "acd6b3ab-6294-4ffa-b7ba-e3fcc1441d46", "lat": 37.77523422241, "lng": -122.42095947266, "category": "Larceny Theft", "severity": 3, "occurredAt": "2023-09-15T12:00:00+00:00", "source": "sfpd", "weight": 0.108 },
+    { "id": "5da739e8-6598-4552-903b-6c10fde3d120", "lat": 37.7763671875, "lng": -122.4195098877, "category": "Motor Vehicle Theft", "severity": 3, "occurredAt": "2023-08-27T12:00:00+00:00", "source": "sfpd", "weight": 0.099 },
+    { "id": "b4d1172e-4e0a-4971-bb32-6d666f256dba", "lat": 37.77709197998, "lng": -122.42133331299, "category": "Assault", "severity": 4, "occurredAt": "2023-09-16T12:00:00+00:00", "source": "sfpd", "weight": 0.082 },
+    { "id": "3cca05a6-1d7c-4231-be0a-adeeec19cef8", "lat": 37.7762298584, "lng": -122.41471099854, "category": "Robbery", "severity": 5, "occurredAt": "2023-09-13T12:00:00+00:00", "source": "sfpd", "weight": 0.031 },
+    { "id": "d9ec95be-9894-4cd4-a7c7-25a6fc1e9af9", "lat": 37.77435684204, "lng": -122.42025756836, "category": "Robbery", "severity": 5, "occurredAt": "2021-05-07T12:00:00+00:00", "source": "sfpd", "weight": 0.062 },
+    { "id": "fe218a11-cbdb-4387-9a36-6d989d44d648", "lat": 37.77250289917, "lng": -122.42262268066, "category": "Assault", "severity": 4, "occurredAt": "2023-09-15T12:00:00+00:00", "source": "sfpd", "weight": 0.045 },
+    { "id": "19143468-e8e3-4163-aca8-4ccc0cd3db47", "lat": 37.77100753784, "lng": -122.4196472168, "category": "Assault", "severity": 4, "occurredAt": "2023-08-27T12:00:00+00:00", "source": "sfpd", "weight": 0.026 }
+  ]
+}

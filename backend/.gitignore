@@ -1,5 +1,7 @@
-node_modules/
-dist/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
 .env
 *.log
 data/seed-hotspots.json

@@ -1,0 +1,54 @@
+{
+  "origin": {
+    "lat": 37.7954425,
+    "lng": -122.3936136,
+    "address": "1 Ferry Building, San Francisco, CA 94105, USA"
+  },
+  "destination": {
+    "lat": 37.7879358,
+    "lng": -122.4075139,
+    "address": "Union Square, San Francisco, CA 94108, USA"
+  },
+  "mode": "walking",
+  "routes": [
+    {
+      "id": "route_2",
+      "summary": "Market St and Sutter St",
+      "polyline": [
+        { "lat": 37.79534, "lng": -122.39379 },
+        { "lat": 37.79414, "lng": -122.39549 },
+        { "lat": 37.79283, "lng": -122.39674 },
+        { "lat": 37.79131, "lng": -122.39867 },
+        { "lat": 37.79022, "lng": -122.40047 },
+        { "lat": 37.78955, "lng": -122.40552 },
+        { "lat": 37.78842, "lng": -122.40691 },
+        { "lat": 37.78773, "lng": -122.40747 }
+      ],
+      "encodedPolyline": "cached-demo",
+      "distanceMeters": 1627,
+      "durationSeconds": 1456,
+      "safetyScore": 37,
+      "riskLevel": "high",
+      "hotspotExposure": 15.81,
+      "avoidedHotspots": [],
+      "explanation": "This route scores 37 out of 100. Main concerns nearby include assault and larceny theft."
+    },
+    {
+      "id": "route_1",
+      "summary": "Market St and Post St",
+      "polyline": [
+        { "lat": 37.79534, "lng": -122.39379 },
+        { "lat": 37.79131, "lng": -122.39867 },
+        { "lat": 37.78773, "lng": -122.40747 }
+      ],
+      "encodedPolyline": "cached-demo",
+      "distanceMeters": 1565,
+      "durationSeconds": 1399,
+      "safetyScore": 25,
+      "riskLevel": "high",
+      "hotspotExposure": 18.71,
+      "avoidedHotspots": [],
+      "explanation": "Alternate via Post Street scores 25 out of 100."
+    }
+  ]
+}

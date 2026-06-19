@@ -1,0 +1,74 @@
+{
+  "origin": {
+    "lat": 37.7954425,
+    "lng": -122.3936136,
+    "address": "1 Ferry Building, San Francisco, CA 94105, USA"
+  },
+  "destination": {
+    "lat": 37.7879358,
+    "lng": -122.4075139,
+    "address": "Union Square, San Francisco, CA 94108, USA"
+  },
+  "mode": "walking",
+  "routes": [
+    {
+      "id": "route_2",
+      "summary": "Market St and Sutter St",
+      "polyline": [
+        { "lat": 37.79534, "lng": -122.39379 },
+        { "lat": 37.79414, "lng": -122.39549 },
+        { "lat": 37.79283, "lng": -122.39674 },
+        { "lat": 37.79131, "lng": -122.39867 },
+        { "lat": 37.79022, "lng": -122.40047 },
+        { "lat": 37.78955, "lng": -122.40552 },
+        { "lat": 37.78842, "lng": -122.40691 },
+        { "lat": 37.78773, "lng": -122.40747 }
+      ],
+      "encodedPolyline": "{{teFd``jVV`@tAbBt@`ACRTd@`@j@Vd@`@\\JNXN@DRUn@|@TZb@l@HGT\\GJHAZb@~@nAL^ZVh@r@b@`@Tf@LPBCVb@v@hAJBVZT\\Tb@_@Zf@h@KFJNLADFRZHXZ`@FJNXDf@TCBPD`@ZfEFdABHBb@ADDt@Z~E@DBf@HhA^lF\\zF@TB@Bd@D?p@KTMFBbAMB@ZA?ETDR^@BB?hAINtA",
+      "distanceMeters": 1627,
+      "durationSeconds": 1456,
+      "safetyScore": 37,
+      "riskLevel": "high",
+      "hotspotExposure": 15.81,
+      "avoidedHotspots": [],
+      "explanation": "This route scores 37 out of 100. Main concerns nearby include assault and larceny theft — consider the safer alternative if available.",
+      "navigationCues": [
+        {
+          "segment": "departure",
+          "lat": 37.79534,
+          "lng": -122.39379,
+          "heading": 228,
+          "streetViewAvailable": true,
+          "description": "You're starting at the Ferry Building with a wide sidewalk along the Embarcadero. Head southwest on Market Street — good visibility and plenty of foot traffic."
+        },
+        {
+          "segment": "along_route",
+          "lat": 37.79077,
+          "lng": -122.39966,
+          "heading": 227,
+          "streetViewAvailable": true,
+          "description": "Midway on Market Street you'll pass busy storefronts and a well-lit corridor. Stay on the main sidewalk; incident reports note occasional thefts in this area."
+        }
+      ],
+      "navigationSummary": "You're starting at the Ferry Building with a wide sidewalk along the Embarcadero. Head southwest on Market Street — good visibility and plenty of foot traffic. Midway on Market Street you'll pass busy storefronts and a well-lit corridor. Stay on the main sidewalk; incident reports note occasional thefts in this area."
+    },
+    {
+      "id": "route_1",
+      "summary": "Market St and Post St",
+      "polyline": [
+        { "lat": 37.79534, "lng": -122.39379 },
+        { "lat": 37.79131, "lng": -122.39867 },
+        { "lat": 37.78842, "lng": -122.40688 },
+        { "lat": 37.78773, "lng": -122.40747 }
+      ],
+      "encodedPolyline": "cached-demo",
+      "distanceMeters": 1565,
+      "durationSeconds": 1399,
+      "safetyScore": 25,
+      "riskLevel": "high",
+      "hotspotExposure": 18.71,
+      "avoidedHotspots": [],
+      "explanation": "Alternate via Post Street scores 25 out of 100 — more exposure to incident clusters near downtown."
+    }
+  ]
+}

@@ -25,12 +25,14 @@ export type RouteCandidate = {
   hotspotExposure: number;
   avoidedHotspots: Hotspot[];
   explanation: string;
+  reroutedAroundHeatmap?: boolean;
 };
 
 export type SafeRoutesResponse = {
   origin: LatLng & { address: string | null };
   destination: LatLng & { address: string | null };
   mode: string;
+  avoidHeatmap?: boolean;
   routes: RouteCandidate[];
 };
 

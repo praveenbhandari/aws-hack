@@ -42,35 +42,41 @@ export default function App() {
 
   const loadHotspots = useCallback(async (center: LatLng) => {
     try {
-      const data = await fetchHotspots(center.lat, center.lng, 700);
+      const data = await fetchHotspots(center.lat, center.lng);
       setHotspots(data.hotspots);
     } catch {
       setHotspots([]);
     }
   }, []);
 
-  const planRoute = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setUserChoseAvoid(null);
-    try {
-      const data = await fetchSafeRoutes(origin, destination, "walking");
-      setRoutes(data.routes);
-      setResolvedOrigin(data.origin);
-      setResolvedDest(data.destination);
-      const center = {
-        lat: (data.origin.lat + data.destination.lat) / 2,
-        lng: (data.origin.lng + data.destination.lng) / 2,
-      };
-      await loadHotspots(center);
-      setSelectedId(pickRoute(data.routes, preference, null));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load routes. Is the backend running on :3001?");
-      setRoutes([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [origin, destination, loadHotspots, preference]);
+  const planRoute = useCallback(
+    async (options?: { avoidHeatmap?: boolean }) => {
+      setLoading(true);
+      setError(null);
+      const avoidHeatmap = options?.avoidHeatmap ?? preference === "avoid";
+      if (options?.avoidHeatmap === undefined) {
+        setUserChoseAvoid(null);
+      }
+      try {
+        const data = await fetchSafeRoutes(origin, destination, "walking", avoidHeatmap);
+        setRoutes(data.routes);
+        setResolvedOrigin(data.origin);
+        setResolvedDest(data.destination);
+        const center = {
+          lat: (data.origin.lat + data.destination.lat) / 2,
+          lng: (data.origin.lng + data.destination.lng) / 2,
+        };
+        await loadHotspots(center);
+        setSelectedId(pickRoute(data.routes, preference, options?.avoidHeatmap ? true : null));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load routes. Is the backend running on :3001?");
+        setRoutes([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [origin, destination, loadHotspots, preference],
+  );
 
   useEffect(() => {
     void planRoute();
@@ -145,9 +151,14 @@ export default function App() {
               onPreferenceChange={(p) => {
                 setPreference(p);
                 setUserChoseAvoid(null);
+                if (p === "avoid") void planRoute({ avoidHeatmap: true });
+                if (p === "fastest") void planRoute({ avoidHeatmap: false });
               }}
               showPrompt={showPrompt}
-              onConfirmPreference={(avoid) => setUserChoseAvoid(avoid)}
+              onConfirmPreference={(avoid) => {
+                setUserChoseAvoid(avoid);
+                if (avoid) void planRoute({ avoidHeatmap: true });
+              }}
             />
           </div>
         </div>
