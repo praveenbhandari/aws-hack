@@ -28,7 +28,9 @@ def _extract_tool_call(body: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         raise HTTPException(400, "No tool calls in request")
     call = tool_calls[0]
     tool_id = call.get("id", "unknown")
-    args = call.get("arguments") or call.get("parameters") or {}
+    # Vapi nests the call under `function` (OpenAI shape); fall back to flat keys.
+    fn = call.get("function") or {}
+    args = fn.get("arguments") or call.get("arguments") or call.get("parameters") or {}
     if isinstance(args, str):
         args = json.loads(args)
     return tool_id, args
@@ -60,14 +62,17 @@ async def vapi_find_nearby_place(body: VapiNearbyRequest):
 
 @router.post("/tools")
 async def vapi_tools(body: VapiToolsRequest):
-    tool_calls = (body.message or {}).get("toolCallList") or []
+    message = body.message or {}
+    tool_calls = message.get("toolCallList") or message.get("toolCalls") or []
     results = []
     last_message = ""
 
     for call in tool_calls:
-        name = call.get("name", "")
+        # Vapi nests name/arguments under `function` (OpenAI shape); fall back to flat keys.
+        fn = call.get("function") or {}
+        name = fn.get("name") or call.get("name", "")
         tool_call_id = call.get("id", "")
-        params = call.get("parameters") or call.get("arguments") or {}
+        params = fn.get("arguments") or call.get("parameters") or call.get("arguments") or {}
 
         if name not in TOOL_NAMES:
             results.append(
