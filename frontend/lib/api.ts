@@ -17,7 +17,7 @@ import type {
 // Flip EXPO_PUBLIC_USE_MOCKS=false once the Companion API is live. Nothing else changes.
 export const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
 export const COMPANION_API_BASE_URL =
-  process.env.EXPO_PUBLIC_COMPANION_API_BASE_URL ?? 'http://localhost:8787';
+  process.env.EXPO_PUBLIC_COMPANION_API_BASE_URL ?? 'http://localhost:3001';
 
 async function post<TBody, TResponse>(path: string, body: TBody): Promise<TResponse> {
   const res = await fetch(`${COMPANION_API_BASE_URL}${path}`, {

@@ -174,3 +174,29 @@ and the map (client re-fetch) run off the same tool call, so they stay in sync.
 > Alternatives if you want the map to update without a re-fetch: (a) **InsForge realtime** — backend
 > publishes the chosen route to a channel the app is subscribed to; or (b) have the assistant speak a
 > compact route summary the app parses. Re-fetch is the least fragile for a hackathon.
+
+---
+
+## Companion API extensions (implemented in `backend/` — local port `3001`)
+
+These endpoints exist in the monorepo Node backend and are not required for the Expo mocks, but the web UI and Vapi Nebius proxy depend on them.
+
+### `GET /health`
+
+```json
+{ "status": "ok", "version": "0.1.0", "mode": "mock" | "live" }
+```
+
+### `POST /chat/completions`
+
+OpenAI-compatible proxy → Nebius Token Factory. **Must stream SSE.**
+
+**Request:** standard OpenAI chat completion body (`model`, `messages`, `stream: true`).
+
+**Response:** `text/event-stream` with OpenAI-style chunks:
+
+```
+data: {"id":"...","choices":[{"delta":{"content":"Hello"}}]}
+
+data: [DONE]
+```
