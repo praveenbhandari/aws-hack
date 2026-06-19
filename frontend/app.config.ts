@@ -13,7 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'guardian',
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.guardian.app',
+    bundleIdentifier: 'com.praveenbhandari.guardian',
     config: {
       googleMapsApiKey: GOOGLE_MAPS_MOBILE_KEY,
     },
