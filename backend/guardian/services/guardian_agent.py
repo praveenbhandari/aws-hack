@@ -55,6 +55,19 @@ def _build_agent() -> Agent:
         name="guardian",
     )
 
+    @agent.system_prompt
+    def _user_location(ctx: RunContext[GuardianDeps]) -> str:
+        if ctx.deps.user_lat is not None and ctx.deps.user_lng is not None:
+            return (
+                f"The user's current GPS location is latitude {ctx.deps.user_lat}, "
+                f"longitude {ctx.deps.user_lng}. When they say 'here', 'from here', or "
+                "'my current location', use it — leave the route origin as 'current'."
+            )
+        return (
+            "The user's GPS location is unavailable. If they ask for a route from their "
+            "current location, briefly ask where they are starting from."
+        )
+
     @agent.tool
     async def get_hotspots(
         ctx: RunContext[GuardianDeps],
@@ -96,12 +109,12 @@ def _build_agent() -> Agent:
     @agent.tool
     async def get_safe_routes(
         ctx: RunContext[GuardianDeps],
-        origin: str,
         destination: str,
+        origin: str = "current",
         mode: str = "walking",
         avoid_heatmap: bool = True,
     ) -> str:
-        """Plan safest routes between two addresses or landmarks. Set avoid_heatmap to detour around crime."""
+        """Plan safest routes to a destination. origin defaults to the user's current location ("current"); pass an address or landmark to start somewhere else. Set avoid_heatmap to detour around crime."""
         out = await dispatch_tool(
             "get_safe_routes",
             {
@@ -109,6 +122,8 @@ def _build_agent() -> Agent:
                 "destination": destination,
                 "mode": mode,
                 "avoidHeatmap": avoid_heatmap,
+                "user_latitude": ctx.deps.user_lat,
+                "user_longitude": ctx.deps.user_lng,
             },
             use_mock=config.use_mock,
         )
