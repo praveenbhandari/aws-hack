@@ -49,12 +49,14 @@ export async function fetchSafeRoutes(
   destination: string,
   mode: "walking" | "driving" = "walking",
   avoidHeatmap = false,
+  includeNavigationCues = true,
 ) {
   const { data } = await api.post<SafeRoutesResponse>("/routes/safe", {
     origin,
     destination,
     mode,
     avoidHeatmap,
+    includeNavigationCues,
   });
   return data;
 }
@@ -106,11 +108,47 @@ export function placeToRouteCandidate(place: NearbyPlace, explanation?: string):
   };
 }
 
-export async function fetchStreetView(lat: number, lng: number) {
+export async function fetchStreetView(lat: number, lng: number, heading = 0) {
   const { data } = await api.get<{
     available: boolean;
     status: string;
     imageUrl: string | null;
   }>("/maps/streetview", { params: { lat, lng } });
+  if (data.available && data.imageUrl) {
+    const sep = data.imageUrl.includes("?") ? "&" : "?";
+    data.imageUrl = `${data.imageUrl}${sep}heading=${heading}`;
+  }
+  return data;
+}
+
+export type StreetViewDescribe = {
+  lat: number;
+  lng: number;
+  heading: number;
+  segment: string;
+  streetViewAvailable: boolean;
+  status: string;
+  description: string;
+  imageUrl: string | null;
+};
+
+export async function fetchStreetViewDescribe(
+  lat: number,
+  lng: number,
+  heading = 0,
+  segment = "along_route",
+  originLabel = "your location",
+  destinationLabel = "destination",
+) {
+  const { data } = await api.get<StreetViewDescribe>("/maps/streetview/describe", {
+    params: {
+      lat,
+      lng,
+      heading,
+      segment,
+      origin_label: originLabel,
+      destination_label: destinationLabel,
+    },
+  });
   return data;
 }

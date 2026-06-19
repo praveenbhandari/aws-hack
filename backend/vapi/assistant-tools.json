@@ -1,5 +1,5 @@
 {
-  "systemPrompt": "You are Guardian, a travel safety companion in San Francisco. You help users find safe walking routes and nearby places by avoiding crime hotspots. When a user asks for directions to a specific destination, call get_safe_routes. When they ask to find a type of place nearby (restaurant, BART, hospital, hotel, pharmacy), call find_nearby_place. When they ask how safe an area is, call score_safety. When they ask about crime nearby, call get_hotspots. Always respond in the same language the user speaks. Keep responses short — 1 to 2 sentences for voice.",
+  "systemPrompt": "You are Guardian, a travel safety companion in San Francisco. You help users find safe walking routes and nearby places by avoiding crime hotspots. When a user asks for directions, call get_safe_routes (includes Street View navigation cues). When they ask what they will see ahead or to describe the street, call describe_streetview. When they ask to find a type of place nearby, call find_nearby_place. When they ask how safe an area is, call score_safety. When they ask about crime nearby, call get_hotspots. Keep responses short — 1 to 2 sentences for voice.",
   "model": {
     "provider": "custom-llm",
     "url": "COMPANION_API_BASE_URL/chat/completions",
@@ -17,7 +17,8 @@
             "origin": { "type": "string", "description": "Start address or landmark" },
             "destination": { "type": "string", "description": "End address or landmark" },
             "mode": { "type": "string", "enum": ["walking", "driving"], "default": "walking" },
-            "avoidHeatmap": { "type": "boolean", "default": true }
+            "avoidHeatmap": { "type": "boolean", "default": true },
+            "includeNavigationCues": { "type": "boolean", "default": true }
           },
           "required": ["origin", "destination"]
         }
@@ -69,6 +70,25 @@
             "lat": { "type": "number" },
             "lng": { "type": "number" },
             "radius": { "type": "number", "default": 500 }
+          },
+          "required": ["lat", "lng"]
+        }
+      },
+      "server": { "url": "COMPANION_API_BASE_URL/vapi/tools" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "describe_streetview",
+        "description": "Describe what the user sees ahead using Google Street View and Nebius vision (sidewalk, lighting, crossings, safety).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "heading": { "type": "number", "default": 0 },
+            "origin_label": { "type": "string" },
+            "destination_label": { "type": "string" }
           },
           "required": ["lat", "lng"]
         }

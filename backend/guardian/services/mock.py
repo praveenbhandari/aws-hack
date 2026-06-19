@@ -147,6 +147,27 @@ def mock_vapi_tool_result(tool_name: str) -> dict:
             "result": __import__("json").dumps(data),
             "message": f"Safety score is {data['safetyScore']} out of 100 ({data['riskLevel']} risk).",
         }
+    if tool_name == "find_nearby_place":
+        return {
+            "result": __import__("json").dumps({"places": [], "chosen": None, "voiceSummary": "Mock nearby search."}),
+            "message": "Mock: nearest safe restaurant is 5 minutes away.",
+        }
+    if tool_name == "describe_streetview":
+        return {
+            "result": __import__("json").dumps(
+                {
+                    "streetViewAvailable": True,
+                    "description": (
+                        "You're on a wide, well-lit sidewalk with steady foot traffic. "
+                        "Stay on the main path — mock Street View + Nebius vision."
+                    ),
+                }
+            ),
+            "message": (
+                "You're on a wide, well-lit sidewalk with steady foot traffic. "
+                "Stay on the main path — mock Street View + Nebius vision."
+            ),
+        }
     data = mock_safe_routes()
     return {
         "result": __import__("json").dumps(data),

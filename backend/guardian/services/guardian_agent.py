@@ -26,6 +26,7 @@ You help users:
 - Plan safe walking or driving routes that avoid crime hotspots
 - Score how safe a location is
 - Find nearby places (restaurant, cafe, BART, hospital, pharmacy, hotel) with the safest walk there
+- Describe what the user will see ahead using Street View + vision (describe_streetview)
 
 Always call the right tool before giving route or place advice. Keep replies short (1–3 sentences).
 Be reassuring, plain, and factual — never alarmist. Match the user's language."""
@@ -135,6 +136,29 @@ def _build_agent() -> Agent:
                 "place_type": place_type,
                 "user_latitude": user_latitude if user_latitude is not None else ctx.deps.user_lat,
                 "user_longitude": user_longitude if user_longitude is not None else ctx.deps.user_lng,
+            },
+            use_mock=config.use_mock,
+        )
+        return out["message"]
+
+    @agent.tool
+    async def describe_streetview(
+        ctx: RunContext[GuardianDeps],
+        lat: float | None = None,
+        lng: float | None = None,
+        heading: int = 0,
+        origin_label: str = "your location",
+        destination_label: str = "destination",
+    ) -> str:
+        """Describe the street ahead using Google Street View + Nebius vision (sidewalk, lighting, safety)."""
+        out = await dispatch_tool(
+            "describe_streetview",
+            {
+                "lat": lat if lat is not None else (ctx.deps.user_lat or SF_LAT),
+                "lng": lng if lng is not None else (ctx.deps.user_lng or SF_LNG),
+                "heading": heading,
+                "origin_label": origin_label,
+                "destination_label": destination_label,
             },
             use_mock=config.use_mock,
         )

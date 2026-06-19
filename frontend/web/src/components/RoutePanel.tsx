@@ -150,6 +150,14 @@ export function RoutePanel({
             <span className="font-medium">Safety brief</span>
           </div>
           <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed">{selected.explanation}</p>
+          {selected.navigationSummary && (
+            <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+              <p className="flex items-center gap-1 text-xs text-emerald-500 mb-1 font-medium">
+                <Shield size={12} /> Ahead on your route
+              </p>
+              <p className="text-xs text-zinc-400 leading-relaxed">{selected.navigationSummary}</p>
+            </div>
+          )}
           {selected.avoidedHotspots.length > 0 && (
             <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
               <p className="flex items-center gap-1 text-xs text-zinc-500 mb-1">

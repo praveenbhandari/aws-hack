@@ -76,7 +76,7 @@ async def vapi_tools(body: VapiToolsRequest):
                     "toolCallId": tool_call_id,
                     "error": (
                         f"Unknown tool {name}. Supported: get_hotspots, score_safety, "
-                        "get_safe_routes, find_nearby_place"
+                        "get_safe_routes, find_nearby_place, describe_streetview"
                     ),
                 }
             )

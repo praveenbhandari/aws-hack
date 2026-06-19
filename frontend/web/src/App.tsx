@@ -13,6 +13,7 @@ import {
 import { MapView } from "./components/MapView";
 import { AgentChat } from "./components/AgentChat";
 import { PlacesPanel } from "./components/PlacesPanel";
+import { LiveStreetViewPanel } from "./components/LiveStreetViewPanel";
 import { RouteForm } from "./components/RouteForm";
 import { RoutePanel } from "./components/RoutePanel";
 import type { Hotspot, LatLng, MapMode, NearbyPlace, RouteCandidate, RoutePreference } from "./types";
@@ -177,6 +178,11 @@ export default function App() {
     routes.length >= 2 &&
     routes[0].safetyScore - routes[routes.length - 1].safetyScore >= 8;
 
+
+  const onLiveLocation = useCallback((pos: LatLng) => {
+    setResolvedOrigin(pos);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur sticky top-0 z-20">
@@ -219,7 +225,7 @@ export default function App() {
           />
         </div>
 
-        <div className="flex-1 grid lg:grid-cols-[1fr_340px] gap-4 min-h-[480px]">
+        <div className="flex-1 grid lg:grid-cols-[1fr_380px] gap-4 min-h-[480px]">
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden min-h-[400px] lg:min-h-0">
             <MapView
               hotspots={hotspots}
@@ -231,7 +237,12 @@ export default function App() {
               selectedPlaceId={selectedPlaceId}
             />
           </div>
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0f] p-4 min-h-[320px]">
+          <div className="flex flex-col gap-4 min-h-[320px] max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
+            <LiveStreetViewPanel
+              destinationLabel={destination}
+              onLocation={onLiveLocation}
+            />
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0f] p-4 flex-1 min-h-[240px]">
             {mapMode === "nearby" ? (
               <PlacesPanel
                 places={nearbyPlaces}
@@ -262,6 +273,7 @@ export default function App() {
                 }}
               />
             )}
+            </div>
           </div>
         </div>
       </main>

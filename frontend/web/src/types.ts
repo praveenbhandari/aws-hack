@@ -46,6 +46,15 @@ export type FindNearbyPlaceResponse = {
   voiceSummary: string;
 };
 
+export type NavigationCue = {
+  segment: string;
+  lat: number;
+  lng: number;
+  heading: number;
+  streetViewAvailable: boolean;
+  description: string;
+};
+
 export type RouteCandidate = {
   id: string;
   summary: string;
@@ -59,6 +68,8 @@ export type RouteCandidate = {
   avoidedHotspots: Hotspot[];
   explanation: string;
   reroutedAroundHeatmap?: boolean;
+  navigationCues?: NavigationCue[];
+  navigationSummary?: string;
 };
 
 export type SafeRoutesResponse = {

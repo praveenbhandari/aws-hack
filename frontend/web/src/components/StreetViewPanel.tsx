@@ -1,78 +1,76 @@
+import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { LatLng } from "../types";
-import { fetchStreetView } from "../api/client";
+import type { NavigationCue } from "../types";
 
-type Props = {
-  point: LatLng | null;
-  label?: string;
+const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
+
+const SEGMENT_LABEL: Record<string, string> = {
+  departure: "Start",
+  along_route: "Mid-route",
+  approach_destination: "Approaching destination",
 };
 
-export function StreetViewPanel({ point, label = "Destination" }: Props) {
-  const [available, setAvailable] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+type Props = {
+  cues: NavigationCue[];
+};
+
+export function StreetViewPanel({ cues }: Props) {
+  const [index, setIndex] = useState(0);
+  const cue = cues[index];
 
   useEffect(() => {
-    if (!point) {
-      setAvailable(false);
-      setImageUrl(null);
-      setError(null);
-      return;
-    }
+    setIndex(0);
+  }, [cues]);
 
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  if (!cues.length || !cue) return null;
 
-    fetchStreetView(point.lat, point.lng)
-      .then((data) => {
-        if (cancelled) return;
-        setAvailable(data.available);
-        if (data.available && data.imageUrl) {
-          const base = import.meta.env.VITE_API_URL ?? "/api";
-          setImageUrl(`${base}${data.imageUrl}`);
-        } else {
-          setImageUrl(null);
-          setError("No Street View coverage at this spot");
-        }
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        setAvailable(false);
-        setImageUrl(null);
-        setError(e instanceof Error ? e.message : "Street View unavailable");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+  const imageUrl =
+    cue.streetViewAvailable && cue.lat != null
+      ? `${API_BASE}/maps/streetview/image?lat=${cue.lat}&lng=${cue.lng}&heading=${cue.heading}`
+      : null;
 
-    return () => {
-      cancelled = true;
-    };
-  }, [point?.lat, point?.lng]);
-
-  if (!point) return null;
+  const label = SEGMENT_LABEL[cue.segment] ?? cue.segment;
 
   return (
     <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0f] overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Street View — {label}</h3>
-        <span className="text-xs text-zinc-500">
-          {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
-        </span>
-      </div>
-      <div className="aspect-[16/10] bg-zinc-900 flex items-center justify-center">
-        {loading && <p className="text-sm text-zinc-500">Loading Street View…</p>}
-        {!loading && imageUrl && (
-          <img src={imageUrl} alt={`Street View at ${label}`} className="w-full h-full object-cover" />
+      <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Eye size={16} className="text-emerald-400" />
+          <h3 className="text-sm font-semibold">Street View · Nebius vision</h3>
+        </div>
+        {cues.length > 1 && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setIndex((i) => Math.max(0, i - 1))}
+              disabled={index === 0}
+              className="p-1 rounded border border-zinc-700 disabled:opacity-30"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-[10px] text-zinc-500">
+              {index + 1}/{cues.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIndex((i) => Math.min(cues.length - 1, i + 1))}
+              disabled={index === cues.length - 1}
+              className="p-1 rounded border border-zinc-700 disabled:opacity-30"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
         )}
-        {!loading && !imageUrl && (
-          <p className="text-sm text-zinc-500 px-4 text-center">
-            {error ?? (available ? "Preview unavailable" : "Set GOOGLE_MAPS_API_KEY for Street View")}
-          </p>
+      </div>
+      <p className="px-4 pt-2 text-xs text-zinc-500">{label} · heading {cue.heading}°</p>
+      <div className="aspect-[16/10] bg-zinc-900 flex items-center justify-center mx-4 mt-2 rounded-lg overflow-hidden">
+        {imageUrl ? (
+          <img src={imageUrl} alt={`Street View ${label}`} className="w-full h-full object-cover" />
+        ) : (
+          <p className="text-sm text-zinc-500 px-4 text-center">No Street View imagery here — description uses location context only.</p>
         )}
       </div>
+      <p className="p-4 text-sm text-zinc-300 leading-relaxed">{cue.description}</p>
     </div>
   );
 }
