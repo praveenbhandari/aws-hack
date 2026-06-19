@@ -7,5 +7,5 @@ export function useVapi() {
   };
   const stopCall = () => {};
 
-  return { startCall, stopCall };
+  return { startCall, stopCall, nearbyPlaces: [] as const };
 }

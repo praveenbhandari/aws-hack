@@ -4,15 +4,19 @@ import {
   mockSafetyScore,
 } from '../mocks/data';
 import type {
+  FindNearbyPlaceResponse,
   GeocodeRequest,
   GeocodeResponse,
   HotspotsResponse,
   LatLng,
+  NearbyPlace,
+  Route,
   SafeRouteRequest,
   SafeRouteResponse,
   SafetyScoreRequest,
   SafetyScoreResponse,
 } from '../types/api';
+import { riskLevelFromScore } from '../types/api';
 
 // Flip EXPO_PUBLIC_USE_MOCKS=false once the Companion API is live. Nothing else changes.
 export const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
@@ -79,4 +83,30 @@ export async function geocode(req: GeocodeRequest): Promise<GeocodeResponse> {
     return mockGeocode(req.query);
   }
   return post<GeocodeRequest, GeocodeResponse>('/geocode', req);
+}
+
+export async function getFindNearbyPlace(
+  placeType: string,
+  lat: number,
+  lng: number,
+): Promise<FindNearbyPlaceResponse> {
+  return get<FindNearbyPlaceResponse>('/find_nearby_place', {
+    type: placeType,
+    lat,
+    lng,
+  });
+}
+
+export function nearbyPlaceToRoute(place: NearbyPlace): Route {
+  return {
+    id: place.id,
+    summary: place.name,
+    polyline: place.route.polyline,
+    distanceMeters: place.route.distanceMeters,
+    durationSeconds: place.route.durationSeconds,
+    safetyScore: place.route.safetyScore,
+    riskLevel: riskLevelFromScore(place.route.safetyScore),
+    explanation: `Walking route to ${place.name} — ${place.route.durationText}.`,
+    avoidedHotspots: [],
+  };
 }

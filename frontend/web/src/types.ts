@@ -13,6 +13,39 @@ export type Hotspot = {
   weight: number;
 };
 
+export type NearbyPlaceRoute = {
+  summary: string;
+  encodedPolyline: string;
+  polyline: string;
+  coords: LatLng[];
+  distanceMeters: number;
+  durationSeconds: number;
+  durationText: string;
+  safetyScore: number;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  hotspotExposure: number;
+};
+
+export type NearbyPlace = {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  rating: number | null;
+  types: string[];
+  businessStatus?: string;
+  riskScore: number;
+  route: NearbyPlaceRoute;
+};
+
+export type FindNearbyPlaceResponse = {
+  places: NearbyPlace[];
+  chosen: number | null;
+  voiceSummary: string;
+};
+
 export type RouteCandidate = {
   id: string;
   summary: string;
@@ -44,3 +77,5 @@ export type HotspotsResponse = {
 };
 
 export type RoutePreference = "ask" | "avoid" | "fastest";
+
+export type MapMode = "route" | "nearby";

@@ -39,6 +39,39 @@ export type SafeRouteRequest = {
   avoidHeatmap?: boolean;
 };
 
+export type NearbyPlaceRoute = {
+  summary: string;
+  polyline: string;
+  encodedPolyline: string;
+  coords: { lat: number; lng: number }[];
+  distanceMeters: number;
+  durationSeconds: number;
+  durationText: string;
+  safetyScore: number;
+  riskScore: number;
+  riskLevel: string;
+  hotspotExposure: number;
+};
+
+export type NearbyPlace = {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  rating: number | null;
+  types: string[];
+  businessStatus?: string;
+  riskScore: number;
+  route: NearbyPlaceRoute;
+};
+
+export type FindNearbyPlaceResponse = {
+  places: NearbyPlace[];
+  chosen: number | null;
+  voiceSummary: string;
+};
+
 export type Route = {
   id: string;
   summary: string;

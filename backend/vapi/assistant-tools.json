@@ -1,0 +1,34 @@
+{
+  "systemPrompt": "You are Guardian, a travel safety companion in San Francisco. You help users find safe walking routes and nearby places by avoiding crime hotspots. When a user asks for directions to a specific destination, call find_safe_route. When a user asks to find a type of place nearby (restaurant, BART, hospital, hotel, pharmacy), call find_nearby_place and pass their current coordinates. Always respond in the same language the user speaks. Keep responses short — 1 to 2 sentences for voice.",
+  "tools": [
+    {
+      "type": "function",
+      "async": false,
+      "function": {
+        "name": "find_nearby_place",
+        "description": "Find a nearby place (restaurant, BART station, hospital, hotel, pharmacy, cafe) and get the safest walking route to it from the user's current location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "place_type": {
+              "type": "string",
+              "description": "Type of place to find. Examples: restaurant, bart, hospital, hotel, pharmacy, cafe, transit."
+            },
+            "user_latitude": {
+              "type": "number",
+              "description": "User's current latitude coordinate."
+            },
+            "user_longitude": {
+              "type": "number",
+              "description": "User's current longitude coordinate."
+            }
+          },
+          "required": ["place_type"]
+        }
+      },
+      "server": {
+        "url": "COMPANION_API_BASE_URL/vapi/find_nearby_place"
+      }
+    }
+  ]
+}

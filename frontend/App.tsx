@@ -41,6 +41,11 @@ export default function App() {
       </View>
       <View style={styles.mapSection}>
         <GuardianMap />
+        <View style={styles.legend} pointerEvents="none">
+          <Text style={styles.legendItem}>🟢 Green line = safe route</Text>
+          <Text style={styles.legendItem}>🔴 Heatmap = crime hotspots</Text>
+          <Text style={styles.legendItem}>📍 Emoji markers = found places</Text>
+        </View>
       </View>
       <View style={styles.voiceSection}>
         <VoicePanel />
@@ -68,6 +73,22 @@ const styles = StyleSheet.create({
   },
   mapSection: {
     flex: 6,
+    position: 'relative',
+  },
+  legend: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  legendItem: {
+    color: '#e2e8f0',
+    fontSize: 11,
   },
   voiceSection: {
     flex: 4,

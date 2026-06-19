@@ -52,7 +52,7 @@ class Config:
     insforge_api_key: str = (
         _env_first("INSFORGE_API_KEY", "INSFORGE_SERVICE_KEY") or _insforge_project.get("api_key", "") or ""
     )
-    google_maps_api_key: str = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+    google_maps_api_key: str = _env_first("GOOGLE_MAPS_API_KEY", "GOOGLE_MAPS_KEY")
     nebius_api_key: str = os.environ.get("NEBIUS_API_KEY", "")
     nebius_base_url: str = os.environ.get("NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1")
     nebius_model: str = os.environ.get(

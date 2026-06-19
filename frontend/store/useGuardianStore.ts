@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Hotspot, LatLng, Route, SafetyScoreResponse } from '../types/api';
+import type { Hotspot, LatLng, NearbyPlace, Route, SafetyScoreResponse } from '../types/api';
 
 export type CallState = 'idle' | 'connecting' | 'listening' | 'speaking';
 
@@ -14,6 +14,7 @@ type GuardianState = {
   location: LatLng | null;
   hotspots: Hotspot[];
   activeRoute: Route | null;
+  nearbyPlaces: NearbyPlace[];
   callState: CallState;
   transcript: TranscriptEntry[];
   safety: SafetyScoreResponse | null;
@@ -21,6 +22,7 @@ type GuardianState = {
   setLocation: (location: LatLng) => void;
   setHotspots: (hotspots: Hotspot[]) => void;
   setActiveRoute: (route: Route | null) => void;
+  setNearbyPlaces: (places: NearbyPlace[]) => void;
   setCallState: (callState: CallState) => void;
   appendTranscript: (entry: TranscriptEntry) => void;
   clearTranscript: () => void;
@@ -31,6 +33,7 @@ export const useGuardianStore = create<GuardianState>((set) => ({
   location: null,
   hotspots: [],
   activeRoute: null,
+  nearbyPlaces: [],
   callState: 'idle',
   transcript: [],
   safety: null,
@@ -38,6 +41,7 @@ export const useGuardianStore = create<GuardianState>((set) => ({
   setLocation: (location) => set({ location }),
   setHotspots: (hotspots) => set({ hotspots }),
   setActiveRoute: (activeRoute) => set({ activeRoute }),
+  setNearbyPlaces: (nearbyPlaces) => set({ nearbyPlaces }),
   setCallState: (callState) => set({ callState }),
   appendTranscript: (entry) =>
     set((s) => {

@@ -1,9 +1,11 @@
 import axios from "axios";
-import type { HotspotsResponse, SafeRoutesResponse } from "../types";
+import type { FindNearbyPlaceResponse, HotspotsResponse, NearbyPlace, RouteCandidate, SafeRoutesResponse } from "../types";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "/api",
 });
+
+const SF_CENTER = { lat: 37.7749, lng: -122.4194 };
 
 export async function fetchHealth() {
   const { data } = await api.get<{ status: string; mode: string }>("/health");
@@ -38,6 +40,43 @@ export async function fetchSafeRoutes(
     avoidHeatmap,
   });
   return data;
+}
+
+export async function fetchFindNearbyPlace(placeType: string, lat: number, lng: number) {
+  const { data } = await api.get<FindNearbyPlaceResponse>("/find_nearby_place", {
+    params: { type: placeType, lat, lng },
+  });
+  return data;
+}
+
+export function getUserLocation(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(SF_CENTER);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(SF_CENTER),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  });
+}
+
+export function placeToRouteCandidate(place: NearbyPlace, explanation?: string): RouteCandidate {
+  return {
+    id: `place-${place.id}`,
+    summary: `Walk to ${place.name}`,
+    polyline: place.route.coords,
+    encodedPolyline: place.route.encodedPolyline,
+    distanceMeters: place.route.distanceMeters,
+    durationSeconds: place.route.durationSeconds,
+    safetyScore: place.route.safetyScore,
+    riskLevel: place.route.riskLevel,
+    hotspotExposure: place.route.hotspotExposure,
+    avoidedHotspots: [],
+    explanation: explanation ?? `Safest nearby option — ${place.route.durationText}, risk score ${place.riskScore}.`,
+  };
 }
 
 export async function fetchStreetView(lat: number, lng: number) {

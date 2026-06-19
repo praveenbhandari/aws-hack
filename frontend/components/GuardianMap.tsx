@@ -3,14 +3,33 @@ import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Heatmap, Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { useGuardianStore } from '../store/useGuardianStore';
+import type { NearbyPlace } from '../types/api';
 
 const SEVERITY_COLOR = ['#9bd', '#7fd17f', '#f2c14e', '#f08a4b', '#e5383b'];
+
+const PLACE_ICONS: Record<string, string> = {
+  restaurant: '🍽️',
+  subway_station: '🚇',
+  train_station: '🚂',
+  hospital: '🏥',
+  pharmacy: '💊',
+  lodging: '🏨',
+  default: '📍',
+};
+
+function placeIcon(place: NearbyPlace): string {
+  for (const t of place.types) {
+    if (PLACE_ICONS[t]) return PLACE_ICONS[t];
+  }
+  return PLACE_ICONS.default;
+}
 
 export default function GuardianMap() {
   const mapRef = useRef<MapView>(null);
   const location = useGuardianStore((s) => s.location);
   const hotspots = useGuardianStore((s) => s.hotspots);
   const activeRoute = useGuardianStore((s) => s.activeRoute);
+  const nearbyPlaces = useGuardianStore((s) => s.nearbyPlaces);
 
   const heatmapPoints = useMemo(
     () =>
@@ -90,6 +109,26 @@ export default function GuardianMap() {
         );
       })}
 
+      {nearbyPlaces.map((place, index) => {
+        const icon = placeIcon(place);
+        const chosen = index === 0;
+        return (
+          <Marker
+            key={place.id}
+            coordinate={{ latitude: place.latitude, longitude: place.longitude }}
+            title={place.name}
+            description={`${place.address} · Risk: ${place.riskScore}`}
+          >
+            <View style={[styles.markerContainer, chosen ? styles.markerChosen : styles.markerOther]}>
+              <Text style={styles.markerEmoji}>{icon}</Text>
+              {place.rating != null && (
+                <Text style={styles.markerRating}>★ {place.rating}</Text>
+              )}
+            </View>
+          </Marker>
+        );
+      })}
+
       {routeCoords.length > 1 && (
         <Polyline
           coordinates={routeCoords}
@@ -113,5 +152,27 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: '#e2e8f0',
+  },
+  markerContainer: {
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    borderWidth: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  markerChosen: {
+    borderColor: '#22c55e',
+  },
+  markerOther: {
+    borderColor: '#94a3b8',
+  },
+  markerEmoji: {
+    fontSize: 18,
+  },
+  markerRating: {
+    color: '#fbbf24',
+    fontSize: 10,
+    marginTop: 2,
   },
 });

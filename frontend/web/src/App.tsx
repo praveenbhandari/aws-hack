@@ -1,10 +1,18 @@
 import { Moon, Shield, Sun } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { fetchHealth, fetchHotspots, fetchSafeRoutes } from "./api/client";
+import {
+  fetchFindNearbyPlace,
+  fetchHealth,
+  fetchHotspots,
+  fetchSafeRoutes,
+  getUserLocation,
+  placeToRouteCandidate,
+} from "./api/client";
 import { MapView } from "./components/MapView";
+import { PlacesPanel } from "./components/PlacesPanel";
 import { RouteForm } from "./components/RouteForm";
 import { RoutePanel } from "./components/RoutePanel";
-import type { Hotspot, LatLng, RouteCandidate, RoutePreference } from "./types";
+import type { Hotspot, LatLng, MapMode, NearbyPlace, RouteCandidate, RoutePreference } from "./types";
 
 function pickRoute(routes: RouteCandidate[], preference: RoutePreference, userChoseAvoid: boolean | null) {
   if (!routes.length) return null;
@@ -18,9 +26,14 @@ function pickRoute(routes: RouteCandidate[], preference: RoutePreference, userCh
 export default function App() {
   const [dark, setDark] = useState(true);
   const [apiMode, setApiMode] = useState("…");
+  const [mapMode, setMapMode] = useState<MapMode>("route");
   const [origin, setOrigin] = useState("Ferry Building, San Francisco");
   const [destination, setDestination] = useState("Mission Dolores Park, San Francisco");
+  const [placeType, setPlaceType] = useState("restaurant");
   const [routes, setRoutes] = useState<RouteCandidate[]>([]);
+  const [nearbyPlaces, setNearbyPlaces] = useState<NearbyPlace[]>([]);
+  const [voiceSummary, setVoiceSummary] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [resolvedOrigin, setResolvedOrigin] = useState<LatLng | null>(null);
   const [resolvedDest, setResolvedDest] = useState<LatLng | null>(null);
@@ -51,6 +64,10 @@ export default function App() {
 
   const planRoute = useCallback(
     async (options?: { avoidHeatmap?: boolean }) => {
+      setMapMode("route");
+      setNearbyPlaces([]);
+      setVoiceSummary(null);
+      setSelectedPlaceId(null);
       setLoading(true);
       setError(null);
       const avoidHeatmap = options?.avoidHeatmap ?? preference === "avoid";
@@ -78,17 +95,69 @@ export default function App() {
     [origin, destination, loadHotspots, preference],
   );
 
+  const findNearby = useCallback(async () => {
+    setMapMode("nearby");
+    setRoutes([]);
+    setSelectedId(null);
+    setLoading(true);
+    setError(null);
+    setVoiceSummary(null);
+    try {
+      const loc = await getUserLocation();
+      setResolvedOrigin(loc);
+      const data = await fetchFindNearbyPlace(placeType, loc.lat, loc.lng);
+      setNearbyPlaces(data.places);
+      setVoiceSummary(data.voiceSummary);
+      if (!data.places.length) {
+        setError("No nearby places found. Enable Places API (New) in Google Cloud.");
+        setResolvedDest(null);
+        return;
+      }
+      const chosen = data.chosen != null ? data.places[data.chosen] : data.places[0];
+      setSelectedPlaceId(chosen.id);
+      setResolvedDest({ lat: chosen.latitude, lng: chosen.longitude });
+      const route = placeToRouteCandidate(chosen, data.voiceSummary);
+      setRoutes([route]);
+      setSelectedId(route.id);
+      const center = {
+        lat: (loc.lat + chosen.latitude) / 2,
+        lng: (loc.lng + chosen.longitude) / 2,
+      };
+      await loadHotspots(center);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to find nearby places.";
+      setError(msg.includes("403") ? "Places API blocked — enable Places API (New) in Google Cloud." : msg);
+      setNearbyPlaces([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [placeType, loadHotspots]);
+
+  const selectNearbyPlace = useCallback(
+    (placeId: string) => {
+      const place = nearbyPlaces.find((p) => p.id === placeId);
+      if (!place) return;
+      setSelectedPlaceId(placeId);
+      setResolvedDest({ lat: place.latitude, lng: place.longitude });
+      const route = placeToRouteCandidate(place, voiceSummary ?? undefined);
+      setRoutes([route]);
+      setSelectedId(route.id);
+    },
+    [nearbyPlaces, voiceSummary],
+  );
+
   useEffect(() => {
     void planRoute();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (routes.length) {
+    if (mapMode === "route" && routes.length) {
       setSelectedId(pickRoute(routes, preference, userChoseAvoid));
     }
-  }, [preference, userChoseAvoid, routes]);
+  }, [preference, userChoseAvoid, routes, mapMode]);
 
   const showPrompt =
+    mapMode === "route" &&
     preference === "ask" &&
     userChoseAvoid === null &&
     routes.length >= 2 &&
@@ -121,11 +190,16 @@ export default function App() {
       <main className="flex-1 max-w-[1600px] mx-auto w-full p-4 sm:p-6 flex flex-col gap-4">
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0f] p-4">
           <RouteForm
+            mode={mapMode}
+            onModeChange={setMapMode}
             origin={origin}
             destination={destination}
+            placeType={placeType}
             onOriginChange={setOrigin}
             onDestinationChange={setDestination}
-            onSubmit={planRoute}
+            onPlaceTypeChange={setPlaceType}
+            onSubmitRoute={() => void planRoute()}
+            onSubmitNearby={() => void findNearby()}
             loading={loading}
           />
         </div>
@@ -138,28 +212,41 @@ export default function App() {
               selectedRouteId={selectedId}
               origin={resolvedOrigin}
               destination={resolvedDest}
+              nearbyPlaces={nearbyPlaces}
+              selectedPlaceId={selectedPlaceId}
             />
           </div>
           <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0c0c0f] p-4 min-h-[320px]">
-            <RoutePanel
-              routes={routes}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              loading={loading}
-              error={error}
-              preference={preference}
-              onPreferenceChange={(p) => {
-                setPreference(p);
-                setUserChoseAvoid(null);
-                if (p === "avoid") void planRoute({ avoidHeatmap: true });
-                if (p === "fastest") void planRoute({ avoidHeatmap: false });
-              }}
-              showPrompt={showPrompt}
-              onConfirmPreference={(avoid) => {
-                setUserChoseAvoid(avoid);
-                if (avoid) void planRoute({ avoidHeatmap: true });
-              }}
-            />
+            {mapMode === "nearby" ? (
+              <PlacesPanel
+                places={nearbyPlaces}
+                selectedPlaceId={selectedPlaceId}
+                onSelect={selectNearbyPlace}
+                voiceSummary={voiceSummary}
+                loading={loading}
+                error={error}
+              />
+            ) : (
+              <RoutePanel
+                routes={routes}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                loading={loading}
+                error={error}
+                preference={preference}
+                onPreferenceChange={(p) => {
+                  setPreference(p);
+                  setUserChoseAvoid(null);
+                  if (p === "avoid") void planRoute({ avoidHeatmap: true });
+                  if (p === "fastest") void planRoute({ avoidHeatmap: false });
+                }}
+                showPrompt={showPrompt}
+                onConfirmPreference={(avoid) => {
+                  setUserChoseAvoid(avoid);
+                  if (avoid) void planRoute({ avoidHeatmap: true });
+                }}
+              />
+            )}
           </div>
         </div>
       </main>
