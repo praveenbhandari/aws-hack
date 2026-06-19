@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -12,8 +13,10 @@ router = APIRouter()
 
 class ChatCompletionsBody(BaseModel):
     model: str | None = None
-    messages: list[dict[str, str]] | None = None
+    messages: list[dict[str, Any]] | None = None  # tool/assistant msgs aren't all str-valued
     stream: bool | None = None
+    tools: list[dict[str, Any]] | None = None
+    tool_choice: Any = None
 
 
 @router.post("/completions")
@@ -47,10 +50,15 @@ async def chat_completions(body: ChatCompletionsBody):
 
     async def stream():
         try:
+            extra: dict[str, Any] = {}
+            if body.tools:
+                extra["tools"] = body.tools
+                extra["tool_choice"] = body.tool_choice or "auto"
             stream_resp = await client.chat.completions.create(
                 model=body.model or config.nebius_model,
                 messages=body.messages or [],
                 stream=True,
+                **extra,
             )
             async for chunk in stream_resp:
                 yield f"data: {chunk.model_dump_json()}\n\n"
