@@ -1,4 +1,3 @@
-import polyline from '@mapbox/polyline';
 import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Heatmap, Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
@@ -43,9 +42,8 @@ export default function GuardianMap() {
 
   const routeCoords = useMemo(() => {
     if (!activeRoute) return [];
-    return polyline
-      .decode(activeRoute.polyline)
-      .map(([lat, lng]) => ({ latitude: lat, longitude: lng }));
+    // route.polyline is already decoded [{lat,lng}] — see backend/guardian/services/google_maps.py.
+    return activeRoute.polyline.map((p) => ({ latitude: p.lat, longitude: p.lng }));
   }, [activeRoute]);
 
   useEffect(() => {
@@ -103,7 +101,7 @@ export default function GuardianMap() {
             description={
               avoided
                 ? 'Avoided by the current safe route'
-                : `${h.count} incidents in the last ${h.recencyDays} days`
+                : `Reported ${new Date(h.occurredAt).toLocaleDateString()}`
             }
           />
         );
@@ -132,7 +130,7 @@ export default function GuardianMap() {
       {routeCoords.length > 1 && (
         <Polyline
           coordinates={routeCoords}
-          strokeColor={activeRoute && activeRoute.riskLevel === 'safe' ? '#16a34a' : '#2563eb'}
+          strokeColor={activeRoute && activeRoute.riskLevel === 'low' ? '#16a34a' : '#2563eb'}
           strokeWidth={5}
         />
       )}

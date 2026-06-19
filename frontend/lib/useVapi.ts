@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as Location from 'expo-location';
 import Vapi from '@vapi-ai/react-native';
-import { getFindNearbyPlace, getSafeRoutes, nearbyPlaceToRoute } from './api';
+import { getFindNearbyPlace, getSafeRoutes, nearbyPlaceToRoute, resolveHere } from './api';
 import { useGuardianStore } from '../store/useGuardianStore';
 import type { LatLng, RouteMode } from '../types/api';
 
@@ -19,13 +19,6 @@ type FindNearbyPlaceArgs = {
   user_latitude?: number;
   user_longitude?: number;
 };
-
-function resolveHere(point: LatLng | string, current: LatLng | null): LatLng | string {
-  if (typeof point === 'string' && point.trim().toLowerCase() === 'here' && current) {
-    return current;
-  }
-  return point;
-}
 
 function parseArgs<T>(raw: unknown): T {
   if (typeof raw === 'string') return JSON.parse(raw) as T;
@@ -81,7 +74,10 @@ export function useVapi() {
           const toolName = tc.function?.name ?? tc.name;
           const rawArgs = tc.function?.arguments ?? tc.arguments ?? tc.parameters;
 
-          if (toolName === 'find_safe_route') {
+          // 'find_safe_route' per API_CONTRACT.md; 'get_safe_routes' is what
+          // backend/guardian/routers/vapi.py actually dispatches. Accept both
+          // until the Vapi assistant's tool name is confirmed.
+          if (toolName === 'find_safe_route' || toolName === 'get_safe_routes') {
             const args = parseArgs<FindSafeRouteArgs>(rawArgs);
             const current = useGuardianStore.getState().location;
             try {

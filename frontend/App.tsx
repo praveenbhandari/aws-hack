@@ -29,7 +29,7 @@ export default function App() {
   useEffect(() => {
     if (!location) return;
     getHotspots(location.lat, location.lng).then((res) => setHotspots(res.hotspots));
-    getSafetyScore({ lat: location.lat, lng: location.lng }).then(setSafety);
+    getSafetyScore({ lat: location.lat, lng: location.lng, radiusMeters: 300 }).then(setSafety);
   }, [location, setHotspots, setSafety]);
 
   return (

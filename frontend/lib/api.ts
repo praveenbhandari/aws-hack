@@ -1,12 +1,6 @@
-import {
-  mockGeocode,
-  mockSafeRoutes,
-  mockSafetyScore,
-} from '../mocks/data';
+import { mockResolveLatLng, mockSafeRoutes, mockSafetyScore } from '../mocks/data';
 import type {
   FindNearbyPlaceResponse,
-  GeocodeRequest,
-  GeocodeResponse,
   HotspotsResponse,
   LatLng,
   NearbyPlace,
@@ -18,7 +12,8 @@ import type {
 } from '../types/api';
 import { riskLevelFromScore } from '../types/api';
 
-// Flip EXPO_PUBLIC_USE_MOCKS=false once the Companion API is live. Nothing else changes.
+// Flip EXPO_PUBLIC_USE_MOCKS=false once the Companion API (backend/guardian) is live.
+// Nothing else in the app changes.
 export const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
 export const COMPANION_API_BASE_URL =
   process.env.EXPO_PUBLIC_COMPANION_API_BASE_URL ?? 'http://localhost:3001';
@@ -46,43 +41,41 @@ async function get<TResponse>(path: string, params: Record<string, string | numb
   return res.json();
 }
 
-export async function getHotspots(lat: number, lng: number, radius = 1500): Promise<HotspotsResponse> {
+export async function getHotspots(lat: number, lng: number, radius = 400): Promise<HotspotsResponse> {
   if (USE_MOCKS) {
     const { MOCK_HOTSPOTS } = await import('../mocks/data');
-    return { hotspots: MOCK_HOTSPOTS };
+    return { center: { lat, lng }, radiusMeters: radius, count: MOCK_HOTSPOTS.length, hotspots: MOCK_HOTSPOTS };
   }
   return get<HotspotsResponse>('/hotspots', { lat, lng, radius });
 }
 
 export async function getSafetyScore(req: SafetyScoreRequest): Promise<SafetyScoreResponse> {
   if (USE_MOCKS) {
-    return mockSafetyScore(req.lat, req.lng, req.radius);
+    return mockSafetyScore(req.lat, req.lng, req.radiusMeters);
   }
   return post<SafetyScoreRequest, SafetyScoreResponse>('/safety/score', req);
 }
 
-function resolveLatLng(point: LatLng | string): LatLng {
-  if (typeof point === 'string') {
-    const geo = mockGeocode(point);
-    return { lat: geo.lat, lng: geo.lng };
-  }
-  return point;
-}
-
 export async function getSafeRoutes(req: SafeRouteRequest): Promise<SafeRouteResponse> {
   if (USE_MOCKS) {
-    const origin = resolveLatLng(req.origin);
-    const destination = resolveLatLng(req.destination);
-    return { routes: mockSafeRoutes(origin, destination, req.mode) };
+    const origin = mockResolveLatLng(req.origin);
+    const destination = mockResolveLatLng(req.destination);
+    return {
+      origin,
+      destination,
+      mode: req.mode ?? 'walking',
+      avoidHeatmap: req.avoidHeatmap ?? false,
+      routes: mockSafeRoutes(origin, destination, req.mode),
+    };
   }
   return post<SafeRouteRequest, SafeRouteResponse>('/routes/safe', req);
 }
 
-export async function geocode(req: GeocodeRequest): Promise<GeocodeResponse> {
-  if (USE_MOCKS) {
-    return mockGeocode(req.query);
+export function resolveHere(point: LatLng | string, current: LatLng | null): LatLng | string {
+  if (typeof point === 'string' && point.trim().toLowerCase() === 'here' && current) {
+    return current;
   }
-  return post<GeocodeRequest, GeocodeResponse>('/geocode', req);
+  return point;
 }
 
 export async function getFindNearbyPlace(
@@ -101,12 +94,16 @@ export function nearbyPlaceToRoute(place: NearbyPlace): Route {
   return {
     id: place.id,
     summary: place.name,
-    polyline: place.route.polyline,
+    // NearbyPlaceRoute names these the opposite of Route — see types/api.ts.
+    polyline: place.route.coords,
+    encodedPolyline: place.route.polyline,
     distanceMeters: place.route.distanceMeters,
     durationSeconds: place.route.durationSeconds,
     safetyScore: place.route.safetyScore,
     riskLevel: riskLevelFromScore(place.route.safetyScore),
-    explanation: `Walking route to ${place.name} — ${place.route.durationText}.`,
+    hotspotExposure: place.route.hotspotExposure,
     avoidedHotspots: [],
+    explanation: `Walking route to ${place.name} — ${place.route.durationText}.`,
+    reroutedAroundHeatmap: false,
   };
 }

@@ -3,17 +3,17 @@ import type { RiskLevel } from '../types/api';
 import { useGuardianStore } from '../store/useGuardianStore';
 
 const RISK_COLOR: Record<RiskLevel, string> = {
-  safe: '#16a34a',
-  caution: '#d97706',
-  risky: '#ea580c',
-  dangerous: '#dc2626',
+  low: '#16a34a',
+  moderate: '#d97706',
+  high: '#ea580c',
+  very_high: '#dc2626',
 };
 
 const RISK_LABEL: Record<RiskLevel, string> = {
-  safe: 'Safe',
-  caution: 'Caution',
-  risky: 'Risky',
-  dangerous: 'Dangerous',
+  low: 'Safe',
+  moderate: 'Caution',
+  high: 'Risky',
+  very_high: 'Dangerous',
 };
 
 export default function SafetyChip() {
