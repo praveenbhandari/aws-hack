@@ -87,6 +87,6 @@ export type HotspotsResponse = {
   hotspots: Hotspot[];
 };
 
-export type RoutePreference = "ask" | "avoid" | "fastest";
+export type RoutePreference = "safest" | "compare" | "fastest";
 
 export type MapMode = "route" | "nearby";

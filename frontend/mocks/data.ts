@@ -2,8 +2,8 @@ import polyline from '@mapbox/polyline';
 import type { Hotspot, LatLng, Route, RouteMode, SafetyScoreResponse } from '../types/api';
 import { riskLevelFromScore } from '../types/api';
 
-// Demo area: Times Square -> Grand Central, NYC. Swap freely once real data lands.
-export const DEFAULT_LOCATION: LatLng = { lat: 40.758, lng: -73.9855 };
+// SF demo center when GPS permission is denied (crime data is SF-based).
+export const DEFAULT_LOCATION: LatLng = { lat: 37.7749, lng: -122.4194 };
 
 export const MOCK_HOTSPOTS: Hotspot[] = [
   { id: 'hs_1', lat: 40.7549, lng: -73.984, category: 'ASSAULT', severity: 4, occurredAt: '2026-06-13T03:00:00Z', source: 'mock', weight: 0.85 },

@@ -49,17 +49,16 @@ export default function VoicePanel() {
 
 const styles = StyleSheet.create({
   panel: {
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
     backgroundColor: '#0f172a',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#1f2937',
   },
   transcriptBox: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    gap: 4,
+    maxHeight: 56,
+    marginBottom: 6,
   },
   placeholder: {
     color: '#64748b',

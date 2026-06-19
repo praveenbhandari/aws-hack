@@ -83,13 +83,26 @@ export function getUserLocation(fallback = SF_CENTER): Promise<{ lat: number; ln
             fromGps: true,
           }),
         () => resolve({ ...fallback, fromGps: false }),
-        { enableHighAccuracy: false, timeout: 4000, maximumAge: 120_000 },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       );
     }),
     new Promise<{ lat: number; lng: number; fromGps: boolean }>((resolve) => {
-      setTimeout(() => resolve({ ...fallback, fromGps: false }), 4500);
+      setTimeout(() => resolve({ ...fallback, fromGps: false }), 10500);
     }),
   ]);
+}
+
+export type GeoPermission = "prompt" | "granted" | "denied" | "unsupported";
+
+export async function getGeoPermission(): Promise<GeoPermission> {
+  if (!navigator.geolocation) return "unsupported";
+  if (!navigator.permissions?.query) return "prompt";
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state as GeoPermission;
+  } catch {
+    return "prompt";
+  }
 }
 
 export function placeToRouteCandidate(place: NearbyPlace, explanation?: string): RouteCandidate {

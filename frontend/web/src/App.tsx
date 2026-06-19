@@ -19,13 +19,21 @@ import { RoutePanel } from "./components/RoutePanel";
 import type { Hotspot, LatLng, MapMode, NearbyPlace, RouteCandidate, RoutePreference } from "./types";
 import { hotspotQueryForPoints, hotspotLimitForRadius, type HotspotQuery } from "./lib/utils";
 
-function pickRoute(routes: RouteCandidate[], preference: RoutePreference, userChoseAvoid: boolean | null) {
+function pickRoute(
+  routes: RouteCandidate[],
+  preference: RoutePreference,
+  userChoseAvoid: boolean | null,
+): string | null {
   if (!routes.length) return null;
-  if (preference === "avoid" || userChoseAvoid === true) return routes[0].id;
+  if (preference === "safest" || userChoseAvoid === true) return routes[0].id;
   if (preference === "fastest" || userChoseAvoid === false) {
     return [...routes].sort((a, b) => a.distanceMeters - b.distanceMeters)[0].id;
   }
   return routes[0].id;
+}
+
+function routesBySafety(routes: RouteCandidate[]): RouteCandidate[] {
+  return [...routes].sort((a, b) => b.safetyScore - a.safetyScore);
 }
 
 export default function App() {
@@ -43,8 +51,9 @@ export default function App() {
   const [resolvedOrigin, setResolvedOrigin] = useState<LatLng | null>(null);
   const [resolvedDest, setResolvedDest] = useState<LatLng | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [preference, setPreference] = useState<RoutePreference>("ask");
+  const [preference, setPreference] = useState<RoutePreference>("safest");
   const [userChoseAvoid, setUserChoseAvoid] = useState<boolean | null>(null);
+  const [manualRoutePick, setManualRoutePick] = useState(false);
   const [routeLoading, setRouteLoading] = useState(false);
   const [nearbyLoading, setNearbyLoading] = useState(false);
   const [locationHint, setLocationHint] = useState<string | null>(null);
@@ -78,9 +87,10 @@ export default function App() {
       setSelectedPlaceId(null);
       setRouteLoading(true);
       setError(null);
-      const avoidHeatmap = options?.avoidHeatmap ?? preference === "avoid";
+      const avoidHeatmap = options?.avoidHeatmap ?? preference === "safest";
       if (options?.avoidHeatmap === undefined) {
         setUserChoseAvoid(null);
+        setManualRoutePick(false);
       }
       try {
         const data = await fetchSafeRoutes(origin, destination, "walking", avoidHeatmap);
@@ -166,18 +176,40 @@ export default function App() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (mapMode === "route" && routes.length) {
+    if (mapMode === "route" && routes.length && !manualRoutePick) {
       setSelectedId(pickRoute(routes, preference, userChoseAvoid));
     }
-  }, [preference, userChoseAvoid, routes, mapMode]);
+  }, [preference, userChoseAvoid, routes, mapMode, manualRoutePick]);
+
+  const handleRouteSelect = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      setManualRoutePick(true);
+      const route = routes.find((r) => r.id === id);
+      if (route && resolvedOrigin && resolvedDest) {
+        void loadHotspots(
+          hotspotQueryForPoints([resolvedOrigin, resolvedDest, ...route.polyline]),
+        );
+      }
+    },
+    [routes, resolvedOrigin, resolvedDest, loadHotspots],
+  );
 
   const showPrompt =
     mapMode === "route" &&
-    preference === "ask" &&
+    preference === "compare" &&
     userChoseAvoid === null &&
     routes.length >= 2 &&
-    routes[0].safetyScore - routes[routes.length - 1].safetyScore >= 8;
+    routesBySafety(routes)[0].safetyScore -
+      routesBySafety(routes)[routes.length - 1].safetyScore >=
+      8;
 
+
+  useEffect(() => {
+    void getUserLocation().then((loc) => {
+      if (loc.fromGps) setResolvedOrigin({ lat: loc.lat, lng: loc.lng });
+    });
+  }, []);
 
   const onLiveLocation = useCallback((pos: LatLng) => {
     setResolvedOrigin(pos);
@@ -254,22 +286,27 @@ export default function App() {
               />
             ) : (
               <RoutePanel
-                routes={routes}
+                routes={routesBySafety(routes)}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={handleRouteSelect}
                 loading={routeLoading}
                 error={error}
                 preference={preference}
                 onPreferenceChange={(p) => {
+                  setManualRoutePick(false);
                   setPreference(p);
                   setUserChoseAvoid(null);
-                  if (p === "avoid") void planRoute({ avoidHeatmap: true });
+                  if (p === "safest") void planRoute({ avoidHeatmap: true });
                   if (p === "fastest") void planRoute({ avoidHeatmap: false });
+                  if (p === "compare") void planRoute({ avoidHeatmap: false });
                 }}
                 showPrompt={showPrompt}
                 onConfirmPreference={(avoid) => {
+                  setManualRoutePick(false);
                   setUserChoseAvoid(avoid);
+                  setPreference(avoid ? "safest" : "fastest");
                   if (avoid) void planRoute({ avoidHeatmap: true });
+                  else void planRoute({ avoidHeatmap: false });
                 }}
               />
             )}

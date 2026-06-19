@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as Location from 'expo-location';
 import Vapi from '@vapi-ai/react-native';
-import { getFindNearbyPlace, getSafeRoutes, nearbyPlaceToRoute, resolveHere } from './api';
+import { applyVoiceNearbyPlace, applyVoiceSafeRoutes, resolveCurrentLocation } from './useGuardianActions';
 import { useGuardianStore } from '../store/useGuardianStore';
 import type { LatLng, RouteMode } from '../types/api';
 
@@ -25,24 +25,12 @@ function parseArgs<T>(raw: unknown): T {
   return raw as T;
 }
 
-async function resolveUserLocation(fallback: LatLng | null): Promise<LatLng> {
-  if (fallback) return fallback;
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
-    return { lat: 37.7749, lng: -122.4194 };
-  }
-  const position = await Location.getCurrentPositionAsync({});
-  return { lat: position.coords.latitude, lng: position.coords.longitude };
-}
-
 export function useVapi() {
   const vapiRef = useRef<Vapi | null>(null);
   const setCallState = useGuardianStore((s) => s.setCallState);
   const appendTranscript = useGuardianStore((s) => s.appendTranscript);
   const clearTranscript = useGuardianStore((s) => s.clearTranscript);
-  const setActiveRoute = useGuardianStore((s) => s.setActiveRoute);
-  const setNearbyPlaces = useGuardianStore((s) => s.setNearbyPlaces);
-  const nearbyPlaces = useGuardianStore((s) => s.nearbyPlaces);
+  const setLocation = useGuardianStore((s) => s.setLocation);
 
   const vapi = useMemo(() => {
     if (vapiRef.current) return vapiRef.current;
@@ -74,21 +62,11 @@ export function useVapi() {
           const toolName = tc.function?.name ?? tc.name;
           const rawArgs = tc.function?.arguments ?? tc.arguments ?? tc.parameters;
 
-          // 'find_safe_route' per API_CONTRACT.md; 'get_safe_routes' is what
-          // backend/guardian/routers/vapi.py actually dispatches. Accept both
-          // until the Vapi assistant's tool name is confirmed.
           if (toolName === 'find_safe_route' || toolName === 'get_safe_routes') {
             const args = parseArgs<FindSafeRouteArgs>(rawArgs);
             const current = useGuardianStore.getState().location;
             try {
-              const { routes } = await getSafeRoutes({
-                origin: resolveHere(args.origin, current),
-                destination: resolveHere(args.destination, current),
-                mode: args.mode ?? 'walking',
-                avoidHeatmap: true,
-              });
-              setActiveRoute(routes[0] ?? null);
-              setNearbyPlaces([]);
+              await applyVoiceSafeRoutes(args.origin, args.destination, current);
             } catch (err) {
               console.warn('find_safe_route re-fetch failed', err);
             }
@@ -100,17 +78,13 @@ export function useVapi() {
             const placeType = args.place_type ?? 'restaurant';
             const current = useGuardianStore.getState().location;
             try {
-              const coords = await resolveUserLocation(
+              const coords = await resolveCurrentLocation(
                 args.user_latitude != null && args.user_longitude != null
                   ? { lat: args.user_latitude, lng: args.user_longitude }
                   : current,
               );
-              const response = await getFindNearbyPlace(placeType, coords.lat, coords.lng);
-              setNearbyPlaces(response.places);
-              const chosen = response.places[0];
-              if (chosen) {
-                setActiveRoute(nearbyPlaceToRoute(chosen));
-              }
+              setLocation(coords);
+              await applyVoiceNearbyPlace(placeType, coords);
             } catch (err) {
               console.warn('find_nearby_place fetch failed', err);
             }
@@ -132,13 +106,20 @@ export function useVapi() {
       vapi.removeListener('speech-end', onSpeechEnd);
       vapi.removeListener('message', onMessage);
     };
-  }, [vapi, appendTranscript, setActiveRoute, setCallState, setNearbyPlaces]);
+  }, [vapi, appendTranscript, setCallState, setLocation]);
 
   const startCall = async () => {
     clearTranscript();
     setCallState('connecting');
     try {
-      await vapi.start(VAPI_ASSISTANT_ID);
+      const coords = await resolveCurrentLocation(useGuardianStore.getState().location);
+      setLocation(coords);
+      await vapi.start(VAPI_ASSISTANT_ID, {
+        variableValues: {
+          user_latitude: coords.lat,
+          user_longitude: coords.lng,
+        },
+      });
     } catch (err) {
       setCallState('idle');
       throw err;
@@ -150,5 +131,5 @@ export function useVapi() {
     setCallState('idle');
   };
 
-  return { startCall, stopCall, nearbyPlaces };
+  return { startCall, stopCall };
 }

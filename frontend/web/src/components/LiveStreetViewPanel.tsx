@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   apiErrorMessage,
   fetchStreetViewDescribe,
+  getGeoPermission,
   getUserLocation,
   SF_CENTER,
   type StreetViewDescribe,
@@ -21,6 +22,7 @@ export function LiveStreetViewPanel({ destinationLabel, onLocation }: Props) {
   const [active, setActive] = useState(true);
   const [position, setPosition] = useState<LatLng | null>(null);
   const [heading, setHeading] = useState(0);
+  const [geoPermission, setGeoPermission] = useState<"prompt" | "granted" | "denied" | "unsupported">("prompt");
   const [fromGps, setFromGps] = useState(false);
   const [snapshot, setSnapshot] = useState<StreetViewDescribe | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,6 +41,10 @@ export function LiveStreetViewPanel({ destinationLabel, onLocation }: Props) {
     headingRef.current = heading;
   }, [heading]);
 
+  useEffect(() => {
+    void getGeoPermission().then(setGeoPermission);
+  }, [fromGps]);
+
   const refresh = useCallback(async () => {
     if (inFlight.current) return;
     inFlight.current = true;
@@ -51,6 +57,7 @@ export function LiveStreetViewPanel({ destinationLabel, onLocation }: Props) {
       setPosition(pos);
       setFromGps(loc.fromGps);
       onLocation?.(pos);
+      if (loc.fromGps) setGeoPermission("granted");
 
       const h = headingRef.current;
       const data = await fetchStreetViewDescribe(
@@ -72,6 +79,17 @@ export function LiveStreetViewPanel({ destinationLabel, onLocation }: Props) {
     }
   }, [destinationLabel, onLocation]);
 
+  const requestLocation = useCallback(async () => {
+    const loc = await getUserLocation(position ?? SF_CENTER);
+    const pos = { lat: loc.lat, lng: loc.lng };
+    setPosition(pos);
+    setFromGps(loc.fromGps);
+    positionRef.current = pos;
+    onLocation?.(pos);
+    setGeoPermission(loc.fromGps ? "granted" : await getGeoPermission());
+    if (loc.fromGps) void refresh();
+  }, [onLocation, position, refresh]);
+
   // Geolocation watch while active
   useEffect(() => {
     if (!active || !navigator.geolocation) return;
@@ -88,7 +106,9 @@ export function LiveStreetViewPanel({ destinationLabel, onLocation }: Props) {
           headingRef.current = pos.coords.heading;
         }
       },
-      () => {},
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) setGeoPermission("denied");
+      },
       { enableHighAccuracy: true, maximumAge: 5000 },
     );
 
@@ -170,6 +190,23 @@ export function LiveStreetViewPanel({ destinationLabel, onLocation }: Props) {
 
       {!active && (
         <p className="p-3 text-xs text-zinc-500">Paused — press play to resume live descriptions.</p>
+      )}
+
+      {active && !fromGps && (
+        <div className="p-3 border-b border-emerald-500/10 space-y-2">
+          <p className="text-xs text-amber-200/90">
+            {geoPermission === "denied"
+              ? "Location blocked — enable it in browser settings (Safari: Settings → Privacy → Location)."
+              : "Allow location so Street View and Nebius describe where you are, not downtown SF."}
+          </p>
+          <button
+            type="button"
+            onClick={() => void requestLocation()}
+            className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium"
+          >
+            Use my current location
+          </button>
+        </div>
       )}
 
       {active && (

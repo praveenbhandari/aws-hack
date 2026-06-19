@@ -1,10 +1,13 @@
 import * as Location from 'expo-location';
 import { useEffect } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import ExplorePanel from './components/ExplorePanel';
 import GuardianMap from './components/GuardianMap';
 import SafetyChip from './components/SafetyChip';
 import VoicePanel from './components/VoicePanel';
 import { getHotspots, getSafetyScore } from './lib/api';
+import { planSafeRoute } from './lib/useGuardianActions';
+import { hotspotLimitForRadius, hotspotQueryForPoints } from './lib/utils';
 import { DEFAULT_LOCATION } from './mocks/data';
 import { useGuardianStore } from './store/useGuardianStore';
 
@@ -13,24 +16,44 @@ export default function App() {
   const setLocation = useGuardianStore((s) => s.setLocation);
   const setHotspots = useGuardianStore((s) => s.setHotspots);
   const setSafety = useGuardianStore((s) => s.setSafety);
+  const routes = useGuardianStore((s) => s.routes);
 
   useEffect(() => {
+    let subscription: Location.LocationSubscription | null = null;
+
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setLocation(DEFAULT_LOCATION);
         return;
       }
-      const position = await Location.getCurrentPositionAsync({});
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+
+      subscription = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.Balanced, distanceInterval: 15 },
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      );
     })();
+
+    return () => subscription?.remove();
   }, [setLocation]);
 
   useEffect(() => {
     if (!location) return;
-    getHotspots(location.lat, location.lng).then((res) => setHotspots(res.hotspots));
+    const query = hotspotQueryForPoints([location]);
+    const limit = hotspotLimitForRadius(query.radius);
+    getHotspots(query.lat, query.lng, query.radius, limit).then((res) => setHotspots(res.hotspots));
     getSafetyScore({ lat: location.lat, lng: location.lng, radiusMeters: 300 }).then(setSafety);
   }, [location, setHotspots, setSafety]);
+
+  useEffect(() => {
+    if (location && routes.length === 0) {
+      void planSafeRoute();
+    }
+  }, [location]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <SafeAreaView style={styles.root}>
@@ -41,13 +64,9 @@ export default function App() {
       </View>
       <View style={styles.mapSection}>
         <GuardianMap />
-        <View style={styles.legend} pointerEvents="none">
-          <Text style={styles.legendItem}>🟢 Green line = safe route</Text>
-          <Text style={styles.legendItem}>🔴 Heatmap = crime hotspots</Text>
-          <Text style={styles.legendItem}>📍 Emoji markers = found places</Text>
-        </View>
       </View>
-      <View style={styles.voiceSection}>
+      <View style={styles.bottomSection}>
+        <ExplorePanel />
         <VoicePanel />
       </View>
     </SafeAreaView>
@@ -64,7 +83,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   title: {
     color: '#fff',
@@ -72,25 +91,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   mapSection: {
-    flex: 6,
-    position: 'relative',
-  },
-  legend: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    bottom: 12,
-    backgroundColor: 'rgba(15, 23, 42, 0.88)',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 2,
-  },
-  legendItem: {
-    color: '#e2e8f0',
-    fontSize: 11,
-  },
-  voiceSection: {
     flex: 4,
+  },
+  bottomSection: {
+    flex: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#1f2937',
   },
 });

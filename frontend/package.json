@@ -6,7 +6,7 @@
     "@daily-co/react-native-daily-js": "^0.78.0",
     "@daily-co/react-native-webrtc": "^118.0.3-daily.4",
     "@mapbox/polyline": "^1.2.1",
-    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-async-storage/async-storage": "1.24.0",
     "@vapi-ai/react-native": "^0.3.0",
     "expo": "~56.0.12",
     "expo-constants": "~56.0.18",
@@ -30,8 +30,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "web:dev": "npm run dev --prefix web",
     "web:install": "npm install --prefix web"

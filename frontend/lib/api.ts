@@ -13,10 +13,25 @@ import type {
 import { riskLevelFromScore } from '../types/api';
 
 // Flip EXPO_PUBLIC_USE_MOCKS=false once the Companion API (backend/guardian) is live.
-// Nothing else in the app changes.
 export const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
 export const COMPANION_API_BASE_URL =
   process.env.EXPO_PUBLIC_COMPANION_API_BASE_URL ?? 'http://localhost:3001';
+
+export type StreetViewDescribe = {
+  lat: number;
+  lng: number;
+  heading: number;
+  segment: string;
+  streetViewAvailable: boolean;
+  status: string;
+  description: string;
+  imageUrl: string | null;
+};
+
+export type AgentChatResponse = {
+  reply: string;
+  toolCalls?: string[];
+};
 
 async function post<TBody, TResponse>(path: string, body: TBody): Promise<TResponse> {
   const res = await fetch(`${COMPANION_API_BASE_URL}${path}`, {
@@ -73,7 +88,12 @@ export async function getSafeRoutes(req: SafeRouteRequest): Promise<SafeRouteRes
       routes: mockSafeRoutes(origin, destination, req.mode),
     };
   }
-  return post<SafeRouteRequest, SafeRouteResponse>('/routes/safe', req);
+  return post<SafeRouteRequest, SafeRouteResponse>('/routes/safe', {
+    mode: 'walking',
+    includeNavigationCues: true,
+    avoidHeatmap: true,
+    ...req,
+  });
 }
 
 export function resolveHere(point: LatLng | string, current: LatLng | null): LatLng | string {
@@ -95,11 +115,10 @@ export async function getFindNearbyPlace(
   });
 }
 
-export function nearbyPlaceToRoute(place: NearbyPlace): Route {
+export function nearbyPlaceToRoute(place: NearbyPlace, explanation?: string): Route {
   return {
     id: place.id,
     summary: place.name,
-    // NearbyPlaceRoute names these the opposite of Route — see types/api.ts.
     polyline: place.route.coords,
     encodedPolyline: place.route.polyline,
     distanceMeters: place.route.distanceMeters,
@@ -108,7 +127,38 @@ export function nearbyPlaceToRoute(place: NearbyPlace): Route {
     riskLevel: riskLevelFromScore(place.route.safetyScore),
     hotspotExposure: place.route.hotspotExposure,
     avoidedHotspots: [],
-    explanation: `Walking route to ${place.name} — ${place.route.durationText}.`,
+    explanation: explanation ?? `Walking route to ${place.name} — ${place.route.durationText}.`,
     reroutedAroundHeatmap: false,
   };
+}
+
+export async function getStreetViewDescribe(
+  lat: number,
+  lng: number,
+  heading = 0,
+  destinationLabel = 'destination',
+): Promise<StreetViewDescribe> {
+  return get<StreetViewDescribe>('/maps/streetview/describe', {
+    lat,
+    lng,
+    heading,
+    segment: 'along_route',
+    origin_label: 'your location',
+    destination_label: destinationLabel,
+  });
+}
+
+export function streetViewImageUrl(lat: number, lng: number, heading: number): string {
+  return `${COMPANION_API_BASE_URL}/maps/streetview/image?lat=${lat}&lng=${lng}&heading=${heading}`;
+}
+
+export async function getAgentChat(
+  message: string,
+  userLat?: number,
+  userLng?: number,
+): Promise<AgentChatResponse> {
+  return post<{ message: string; user_lat?: number; user_lng?: number }, AgentChatResponse>(
+    '/agent/chat',
+    { message, user_lat: userLat, user_lng: userLng },
+  );
 }

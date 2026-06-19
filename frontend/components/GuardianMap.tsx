@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Heatmap, Marker, PROVIDER_GOOGLE, Polyline } from 'react-native-maps';
 import { useGuardianStore } from '../store/useGuardianStore';
-import type { NearbyPlace } from '../types/api';
+import type { NearbyPlace, Route } from '../types/api';
 
 const SEVERITY_COLOR = ['#9bd', '#7fd17f', '#f2c14e', '#f08a4b', '#e5383b'];
+const ROUTE_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b'];
 
 const PLACE_ICONS: Record<string, string> = {
   restaurant: '🍽️',
-  subway_station: '🚇',
-  train_station: '🚂',
+  cafe: '☕',
+  bar: '🍺',
   hospital: '🏥',
   pharmacy: '💊',
   lodging: '🏨',
@@ -27,8 +28,13 @@ export default function GuardianMap() {
   const mapRef = useRef<MapView>(null);
   const location = useGuardianStore((s) => s.location);
   const hotspots = useGuardianStore((s) => s.hotspots);
+  const routes = useGuardianStore((s) => s.routes);
+  const selectedRouteId = useGuardianStore((s) => s.selectedRouteId);
   const activeRoute = useGuardianStore((s) => s.activeRoute);
   const nearbyPlaces = useGuardianStore((s) => s.nearbyPlaces);
+  const selectedPlaceId = useGuardianStore((s) => s.selectedPlaceId);
+  const resolvedDestination = useGuardianStore((s) => s.resolvedDestination);
+  const mapMode = useGuardianStore((s) => s.mapMode);
 
   const heatmapPoints = useMemo(
     () =>
@@ -37,23 +43,36 @@ export default function GuardianMap() {
         longitude: h.lng,
         weight: h.weight,
       })),
-    [hotspots]
+    [hotspots],
   );
 
-  const routeCoords = useMemo(() => {
-    if (!activeRoute) return [];
-    // route.polyline is already decoded [{lat,lng}] — see backend/guardian/services/google_maps.py.
-    return activeRoute.polyline.map((p) => ({ latitude: p.lat, longitude: p.lng }));
-  }, [activeRoute]);
+  const displayRoutes: Route[] = useMemo(() => {
+    if (mapMode === 'nearby' && activeRoute) return [activeRoute];
+    return routes;
+  }, [mapMode, routes, activeRoute]);
+
+  const fitCoords = useMemo(() => {
+    const coords: { latitude: number; longitude: number }[] = [];
+    if (location) coords.push({ latitude: location.lat, longitude: location.lng });
+    if (resolvedDestination) {
+      coords.push({ latitude: resolvedDestination.lat, longitude: resolvedDestination.lng });
+    }
+    for (const route of displayRoutes) {
+      for (const p of route.polyline) {
+        coords.push({ latitude: p.lat, longitude: p.lng });
+      }
+    }
+    return coords;
+  }, [location, resolvedDestination, displayRoutes]);
 
   useEffect(() => {
-    if (routeCoords.length > 1) {
-      mapRef.current?.fitToCoordinates(routeCoords, {
-        edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+    if (fitCoords.length > 1) {
+      mapRef.current?.fitToCoordinates(fitCoords, {
+        edgePadding: { top: 48, right: 48, bottom: 48, left: 48 },
         animated: true,
       });
     }
-  }, [routeCoords]);
+  }, [fitCoords]);
 
   if (!location) {
     return (
@@ -107,9 +126,20 @@ export default function GuardianMap() {
         );
       })}
 
-      {nearbyPlaces.map((place, index) => {
+      {resolvedDestination && (
+        <Marker
+          coordinate={{
+            latitude: resolvedDestination.lat,
+            longitude: resolvedDestination.lng,
+          }}
+          pinColor="#ef4444"
+          title="Destination"
+        />
+      )}
+
+      {nearbyPlaces.map((place) => {
         const icon = placeIcon(place);
-        const chosen = index === 0;
+        const chosen = place.id === selectedPlaceId;
         return (
           <Marker
             key={place.id}
@@ -127,13 +157,27 @@ export default function GuardianMap() {
         );
       })}
 
-      {routeCoords.length > 1 && (
-        <Polyline
-          coordinates={routeCoords}
-          strokeColor={activeRoute && activeRoute.riskLevel === 'low' ? '#16a34a' : '#2563eb'}
-          strokeWidth={5}
-        />
-      )}
+      {displayRoutes.map((route, index) => {
+        const selected = route.id === selectedRouteId;
+        const coords = route.polyline.map((p) => ({ latitude: p.lat, longitude: p.lng }));
+        if (coords.length < 2) return null;
+        return (
+          <Polyline
+            key={route.id}
+            coordinates={coords}
+            strokeColor={
+              selected
+                ? route.riskLevel === 'low'
+                  ? '#16a34a'
+                  : '#2563eb'
+                : ROUTE_COLORS[index % ROUTE_COLORS.length]
+            }
+            strokeWidth={selected ? 5 : 3}
+            lineDashPattern={selected ? undefined : [8, 6]}
+            zIndex={selected ? 2 : 1}
+          />
+        );
+      })}
     </MapView>
   );
 }
