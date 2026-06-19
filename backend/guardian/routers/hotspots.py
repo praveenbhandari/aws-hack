@@ -9,8 +9,8 @@ router = APIRouter()
 async def hotspots(
     lat: float = Query(...),
     lng: float = Query(...),
-    radius: float = Query(400),
-    limit: int = Query(800, ge=1, le=2000),
+  radius: float = Query(400),
+  limit: int = Query(2000, ge=1, le=5000),
 ):
     if lat != lat or lng != lng:  # NaN check
         raise HTTPException(400, "lat and lng are required numbers")

@@ -14,6 +14,7 @@ type Props = {
   onSubmitRoute: () => void;
   onSubmitNearby: () => void;
   loading: boolean;
+  locationHint?: string | null;
 };
 
 const PRESETS = [
@@ -33,6 +34,7 @@ export function RouteForm({
   onSubmitRoute,
   onSubmitNearby,
   loading,
+  locationHint,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -123,7 +125,7 @@ export function RouteForm({
         <div className="space-y-3">
           <p className="text-xs text-zinc-500 flex items-center gap-1">
             <MapPin size={12} />
-            Uses your browser location · finds safest walk to nearby places
+            {locationHint ?? "Tries your location, falls back to SF center in ~4s"}
           </p>
           <div className="flex flex-wrap gap-2">
             {PLACE_TYPE_OPTIONS.map((opt) => (

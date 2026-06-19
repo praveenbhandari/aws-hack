@@ -1,18 +1,22 @@
 import { Moon, Shield, Sun } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
+  apiErrorMessage,
   fetchFindNearbyPlace,
   fetchHealth,
   fetchHotspots,
   fetchSafeRoutes,
   getUserLocation,
   placeToRouteCandidate,
+  SF_CENTER,
 } from "./api/client";
 import { MapView } from "./components/MapView";
+import { AgentChat } from "./components/AgentChat";
 import { PlacesPanel } from "./components/PlacesPanel";
 import { RouteForm } from "./components/RouteForm";
 import { RoutePanel } from "./components/RoutePanel";
 import type { Hotspot, LatLng, MapMode, NearbyPlace, RouteCandidate, RoutePreference } from "./types";
+import { hotspotQueryForPoints, hotspotLimitForRadius, type HotspotQuery } from "./lib/utils";
 
 function pickRoute(routes: RouteCandidate[], preference: RoutePreference, userChoseAvoid: boolean | null) {
   if (!routes.length) return null;
@@ -40,7 +44,9 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [preference, setPreference] = useState<RoutePreference>("ask");
   const [userChoseAvoid, setUserChoseAvoid] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
+  const [locationHint, setLocationHint] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,9 +59,10 @@ export default function App() {
       .catch(() => setApiMode("offline"));
   }, []);
 
-  const loadHotspots = useCallback(async (center: LatLng) => {
+  const loadHotspots = useCallback(async (query: HotspotQuery) => {
     try {
-      const data = await fetchHotspots(center.lat, center.lng);
+      const limit = hotspotLimitForRadius(query.radius);
+      const data = await fetchHotspots(query.lat, query.lng, query.radius, limit);
       setHotspots(data.hotspots);
     } catch {
       setHotspots([]);
@@ -68,7 +75,7 @@ export default function App() {
       setNearbyPlaces([]);
       setVoiceSummary(null);
       setSelectedPlaceId(null);
-      setLoading(true);
+      setRouteLoading(true);
       setError(null);
       const avoidHeatmap = options?.avoidHeatmap ?? preference === "avoid";
       if (options?.avoidHeatmap === undefined) {
@@ -79,17 +86,20 @@ export default function App() {
         setRoutes(data.routes);
         setResolvedOrigin(data.origin);
         setResolvedDest(data.destination);
-        const center = {
-          lat: (data.origin.lat + data.destination.lat) / 2,
-          lng: (data.origin.lng + data.destination.lng) / 2,
-        };
-        await loadHotspots(center);
+        const primary = data.routes[0];
+        await loadHotspots(
+          hotspotQueryForPoints([
+            data.origin,
+            data.destination,
+            ...(primary?.polyline ?? []),
+          ]),
+        );
         setSelectedId(pickRoute(data.routes, preference, options?.avoidHeatmap ? true : null));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load routes. Is the backend running on :3001?");
+        setError(apiErrorMessage(e, "Failed to load routes. Is the backend running on :3001?"));
         setRoutes([]);
       } finally {
-        setLoading(false);
+        setRouteLoading(false);
       }
     },
     [origin, destination, loadHotspots, preference],
@@ -99,17 +109,20 @@ export default function App() {
     setMapMode("nearby");
     setRoutes([]);
     setSelectedId(null);
-    setLoading(true);
+    setNearbyLoading(true);
     setError(null);
     setVoiceSummary(null);
+    setLocationHint(null);
     try {
-      const loc = await getUserLocation();
-      setResolvedOrigin(loc);
+      const fallback = resolvedOrigin ?? SF_CENTER;
+      const loc = await getUserLocation(fallback);
+      setResolvedOrigin({ lat: loc.lat, lng: loc.lng });
+      setLocationHint(loc.fromGps ? "Using your location" : "Using map center (SF demo area)");
       const data = await fetchFindNearbyPlace(placeType, loc.lat, loc.lng);
       setNearbyPlaces(data.places);
       setVoiceSummary(data.voiceSummary);
       if (!data.places.length) {
-        setError("No nearby places found. Enable Places API (New) in Google Cloud.");
+        setError(data.voiceSummary || "No nearby places found.");
         setResolvedDest(null);
         return;
       }
@@ -119,19 +132,20 @@ export default function App() {
       const route = placeToRouteCandidate(chosen, data.voiceSummary);
       setRoutes([route]);
       setSelectedId(route.id);
-      const center = {
-        lat: (loc.lat + chosen.latitude) / 2,
-        lng: (loc.lng + chosen.longitude) / 2,
-      };
-      await loadHotspots(center);
+      await loadHotspots(
+        hotspotQueryForPoints([
+          { lat: loc.lat, lng: loc.lng },
+          { lat: chosen.latitude, lng: chosen.longitude },
+          ...chosen.route.coords,
+        ]),
+      );
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to find nearby places.";
-      setError(msg.includes("403") ? "Places API blocked — enable Places API (New) in Google Cloud." : msg);
+      setError(apiErrorMessage(e, "Failed to find nearby places."));
       setNearbyPlaces([]);
     } finally {
-      setLoading(false);
+      setNearbyLoading(false);
     }
-  }, [placeType, loadHotspots]);
+  }, [placeType, loadHotspots, resolvedOrigin]);
 
   const selectNearbyPlace = useCallback(
     (placeId: string) => {
@@ -200,7 +214,8 @@ export default function App() {
             onPlaceTypeChange={setPlaceType}
             onSubmitRoute={() => void planRoute()}
             onSubmitNearby={() => void findNearby()}
-            loading={loading}
+            loading={mapMode === "nearby" ? nearbyLoading : routeLoading}
+            locationHint={locationHint}
           />
         </div>
 
@@ -223,7 +238,7 @@ export default function App() {
                 selectedPlaceId={selectedPlaceId}
                 onSelect={selectNearbyPlace}
                 voiceSummary={voiceSummary}
-                loading={loading}
+                loading={nearbyLoading}
                 error={error}
               />
             ) : (
@@ -231,7 +246,7 @@ export default function App() {
                 routes={routes}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
-                loading={loading}
+                loading={routeLoading}
                 error={error}
                 preference={preference}
                 onPreferenceChange={(p) => {
@@ -250,6 +265,10 @@ export default function App() {
           </div>
         </div>
       </main>
+      <AgentChat
+        userLat={resolvedOrigin?.lat}
+        userLng={resolvedOrigin?.lng}
+      />
     </div>
   );
 }

@@ -41,12 +41,17 @@ async function get<TResponse>(path: string, params: Record<string, string | numb
   return res.json();
 }
 
-export async function getHotspots(lat: number, lng: number, radius = 400): Promise<HotspotsResponse> {
+export async function getHotspots(
+  lat: number,
+  lng: number,
+  radius = 1500,
+  limit = 2500,
+): Promise<HotspotsResponse> {
   if (USE_MOCKS) {
     const { MOCK_HOTSPOTS } = await import('../mocks/data');
     return { center: { lat, lng }, radiusMeters: radius, count: MOCK_HOTSPOTS.length, hotspots: MOCK_HOTSPOTS };
   }
-  return get<HotspotsResponse>('/hotspots', { lat, lng, radius });
+  return get<HotspotsResponse>('/hotspots', { lat, lng, radius, limit });
 }
 
 export async function getSafetyScore(req: SafetyScoreRequest): Promise<SafetyScoreResponse> {

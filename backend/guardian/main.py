@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 from guardian.config import config
 from guardian.services.api_cache import is_cache_only
-from guardian.routers import auth, chat, find_nearby_place, hotspots, maps, routes, safety, trips, vapi
+from guardian.routers import agent, auth, chat, find_nearby_place, hotspots, maps, routes, safety, trips, vapi
 
 app = FastAPI(title="Guardian Companion API", version="0.1.0", redirect_slashes=False)
 
@@ -22,6 +22,7 @@ app.include_router(routes.router, prefix="/routes", tags=["routes"])
 app.include_router(maps.router, prefix="/maps", tags=["maps"])
 app.include_router(find_nearby_place.router, prefix="/find_nearby_place", tags=["places"])
 app.include_router(vapi.router, prefix="/vapi", tags=["vapi"])
+app.include_router(agent.router, prefix="/agent", tags=["agent"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(trips.router, prefix="/trips", tags=["trips"])

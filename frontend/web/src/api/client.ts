@@ -1,25 +1,42 @@
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import type { FindNearbyPlaceResponse, HotspotsResponse, NearbyPlace, RouteCandidate, SafeRoutesResponse } from "../types";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "/api",
+  timeout: 45_000,
 });
 
-const SF_CENTER = { lat: 37.7749, lng: -122.4194 };
+export const SF_CENTER = { lat: 37.7749, lng: -122.4194 };
+
+export function apiErrorMessage(e: unknown, fallback = "Request failed"): string {
+  if (isAxiosError(e)) {
+    const detail = e.response?.data?.detail;
+    if (typeof detail === "string") {
+      if (detail.includes("403") || detail.includes("API_KEY_SERVICE_BLOCKED")) {
+        return "Places API blocked — enable Places API (New) in Google Cloud Console.";
+      }
+      if (detail.length > 120) return detail.slice(0, 120) + "…";
+      return detail;
+    }
+    if (e.code === "ECONNABORTED") return "Request timed out — is the backend running on :3001?";
+    if (e.response?.status === 502) return "Backend error — check Places API (New) is enabled.";
+    return e.message;
+  }
+  return e instanceof Error ? e.message : fallback;
+}
 
 export async function fetchHealth() {
   const { data } = await api.get<{ status: string; mode: string }>("/health");
   return data;
 }
 
-const MAP_HOTSPOT_RADIUS = 400;
-const MAP_HOTSPOT_LIMIT = 800;
+const MAP_HOTSPOT_LIMIT_MAX = 5000;
 
 export async function fetchHotspots(
   lat: number,
   lng: number,
-  radius = MAP_HOTSPOT_RADIUS,
-  limit = MAP_HOTSPOT_LIMIT,
+  radius = 1500,
+  limit = MAP_HOTSPOT_LIMIT_MAX,
 ) {
   const { data } = await api.get<HotspotsResponse>("/hotspots", {
     params: { lat, lng, radius, limit },
@@ -49,18 +66,28 @@ export async function fetchFindNearbyPlace(placeType: string, lat: number, lng: 
   return data;
 }
 
-export function getUserLocation(): Promise<{ lat: number; lng: number }> {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      resolve(SF_CENTER);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(SF_CENTER),
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-  });
+export function getUserLocation(fallback = SF_CENTER): Promise<{ lat: number; lng: number; fromGps: boolean }> {
+  if (!navigator.geolocation) {
+    return Promise.resolve({ ...fallback, fromGps: false });
+  }
+
+  return Promise.race([
+    new Promise<{ lat: number; lng: number; fromGps: boolean }>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          resolve({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            fromGps: true,
+          }),
+        () => resolve({ ...fallback, fromGps: false }),
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 120_000 },
+      );
+    }),
+    new Promise<{ lat: number; lng: number; fromGps: boolean }>((resolve) => {
+      setTimeout(() => resolve({ ...fallback, fromGps: false }), 4500);
+    }),
+  ]);
 }
 
 export function placeToRouteCandidate(place: NearbyPlace, explanation?: string): RouteCandidate {

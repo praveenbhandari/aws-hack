@@ -1,34 +1,79 @@
 {
-  "systemPrompt": "You are Guardian, a travel safety companion in San Francisco. You help users find safe walking routes and nearby places by avoiding crime hotspots. When a user asks for directions to a specific destination, call find_safe_route. When a user asks to find a type of place nearby (restaurant, BART, hospital, hotel, pharmacy), call find_nearby_place and pass their current coordinates. Always respond in the same language the user speaks. Keep responses short — 1 to 2 sentences for voice.",
+  "systemPrompt": "You are Guardian, a travel safety companion in San Francisco. You help users find safe walking routes and nearby places by avoiding crime hotspots. When a user asks for directions to a specific destination, call get_safe_routes. When they ask to find a type of place nearby (restaurant, BART, hospital, hotel, pharmacy), call find_nearby_place. When they ask how safe an area is, call score_safety. When they ask about crime nearby, call get_hotspots. Always respond in the same language the user speaks. Keep responses short — 1 to 2 sentences for voice.",
+  "model": {
+    "provider": "custom-llm",
+    "url": "COMPANION_API_BASE_URL/chat/completions",
+    "model": "Qwen/Qwen3-32B-fast"
+  },
   "tools": [
     {
       "type": "function",
-      "async": false,
       "function": {
-        "name": "find_nearby_place",
-        "description": "Find a nearby place (restaurant, BART station, hospital, hotel, pharmacy, cafe) and get the safest walking route to it from the user's current location.",
+        "name": "get_safe_routes",
+        "description": "Plan safest walking or driving routes between two places, optionally avoiding crime heatmap.",
         "parameters": {
           "type": "object",
           "properties": {
-            "place_type": {
-              "type": "string",
-              "description": "Type of place to find. Examples: restaurant, bart, hospital, hotel, pharmacy, cafe, transit."
-            },
-            "user_latitude": {
-              "type": "number",
-              "description": "User's current latitude coordinate."
-            },
-            "user_longitude": {
-              "type": "number",
-              "description": "User's current longitude coordinate."
-            }
+            "origin": { "type": "string", "description": "Start address or landmark" },
+            "destination": { "type": "string", "description": "End address or landmark" },
+            "mode": { "type": "string", "enum": ["walking", "driving"], "default": "walking" },
+            "avoidHeatmap": { "type": "boolean", "default": true }
+          },
+          "required": ["origin", "destination"]
+        }
+      },
+      "server": { "url": "COMPANION_API_BASE_URL/vapi/tools" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "find_nearby_place",
+        "description": "Find a nearby place and safest walking route from user location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "place_type": { "type": "string", "description": "restaurant, bart, hospital, hotel, pharmacy, cafe" },
+            "user_latitude": { "type": "number" },
+            "user_longitude": { "type": "number" }
           },
           "required": ["place_type"]
         }
       },
-      "server": {
-        "url": "COMPANION_API_BASE_URL/vapi/find_nearby_place"
-      }
+      "server": { "url": "COMPANION_API_BASE_URL/vapi/tools" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "score_safety",
+        "description": "Safety score 0-100 for a lat/lng location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "radiusMeters": { "type": "number", "default": 300 }
+          },
+          "required": ["lat", "lng"]
+        }
+      },
+      "server": { "url": "COMPANION_API_BASE_URL/vapi/tools" }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_hotspots",
+        "description": "Crime hotspots near a location.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "radius": { "type": "number", "default": 500 }
+          },
+          "required": ["lat", "lng"]
+        }
+      },
+      "server": { "url": "COMPANION_API_BASE_URL/vapi/tools" }
     }
   ]
 }

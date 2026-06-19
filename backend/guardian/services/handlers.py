@@ -93,7 +93,7 @@ async def _get_hotspots_live(lat: float, lng: float, radius: float, limit: int) 
     }
 
 
-async def get_hotspots(lat: float, lng: float, radius: float, limit: int = 800) -> dict:
+async def get_hotspots(lat: float, lng: float, radius: float, limit: int = 2000) -> dict:
     if config.use_mock:
         return mock_data.mock_hotspots(lat, lng, radius)
 

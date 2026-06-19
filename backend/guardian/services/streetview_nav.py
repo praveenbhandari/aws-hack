@@ -86,3 +86,51 @@ async def build_navigation_cues(
         )
 
     return cues
+
+
+async def describe_streetview_point(
+    lat: float,
+    lng: float,
+    *,
+    heading: int = 0,
+    segment: str = "along_route",
+    origin_label: str = "your location",
+    destination_label: str = "destination",
+    mode: str = "walking",
+    near_hotspots: list | None = None,
+) -> dict:
+    """Single-point Street View fetch + Nebius vision (or text-only) description."""
+    from guardian.services.hotspots import query_hotspots_near
+
+    hotspots = near_hotspots
+    if hotspots is None:
+        hotspots = await query_hotspots_near(lat, lng, 200, 80)
+    local_hotspots = with_weights(hotspots, {"lat": lat, "lng": lng}, 120)[:5]
+
+    meta = await streetview_metadata(lat, lng)
+    image = None
+    if meta.get("available"):
+        image = await fetch_streetview_image(lat, lng, heading=heading, pitch=0)
+
+    description = await describe_streetview_for_navigation(
+        image_bytes=image,
+        segment=segment,
+        heading=heading,
+        origin_label=origin_label,
+        destination_label=destination_label,
+        mode=mode,
+        lat=lat,
+        lng=lng,
+        nearby_hotspots=local_hotspots,
+    )
+
+    return {
+        "lat": lat,
+        "lng": lng,
+        "heading": heading,
+        "segment": segment,
+        "streetViewAvailable": bool(image),
+        "status": meta.get("status", "UNKNOWN"),
+        "description": description,
+        "imageUrl": f"/maps/streetview/image?lat={lat}&lng={lng}&heading={heading}" if image else None,
+    }
