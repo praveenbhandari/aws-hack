@@ -12,10 +12,12 @@ import type {
 } from '../types/api';
 import { riskLevelFromScore } from '../types/api';
 
+import { GUARDIAN_API_URL } from './config';
+
 // Flip EXPO_PUBLIC_USE_MOCKS=false once the Companion API (backend/guardian) is live.
 export const USE_MOCKS = process.env.EXPO_PUBLIC_USE_MOCKS !== 'false';
 export const COMPANION_API_BASE_URL =
-  process.env.EXPO_PUBLIC_COMPANION_API_BASE_URL ?? 'http://localhost:3001';
+  process.env.EXPO_PUBLIC_COMPANION_API_BASE_URL ?? GUARDIAN_API_URL;
 
 export type StreetViewDescribe = {
   lat: number;
@@ -161,4 +163,12 @@ export async function getAgentChat(
     '/agent/chat',
     { message, user_lat: userLat, user_lng: userLng },
   );
+}
+
+export async function getHealth(): Promise<{ status: string; mode: string; version?: string }> {
+  const res = await fetch(`${COMPANION_API_BASE_URL}/health`);
+  if (!res.ok) {
+    throw new Error(`health failed: ${res.status}`);
+  }
+  return res.json();
 }

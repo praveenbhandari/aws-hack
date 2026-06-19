@@ -9,8 +9,9 @@ import {
   type StreetViewDescribe,
 } from "../api/client";
 import type { LatLng } from "../types";
+import { GUARDIAN_API_URL } from "../lib/config";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
+const API_BASE = import.meta.env.VITE_API_URL ?? GUARDIAN_API_URL;
 const REFRESH_MS = 20_000;
 
 type Props = {

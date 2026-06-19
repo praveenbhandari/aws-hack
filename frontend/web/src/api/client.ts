@@ -1,8 +1,9 @@
 import axios, { isAxiosError } from "axios";
+import { GUARDIAN_API_URL } from "../lib/config";
 import type { FindNearbyPlaceResponse, HotspotsResponse, NearbyPlace, RouteCandidate, SafeRoutesResponse } from "../types";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "/api",
+  baseURL: import.meta.env.VITE_API_URL ?? GUARDIAN_API_URL,
   timeout: 45_000,
 });
 

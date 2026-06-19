@@ -1,22 +1,29 @@
 import * as Location from 'expo-location';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import ExplorePanel from './components/ExplorePanel';
 import GuardianMap from './components/GuardianMap';
 import SafetyChip from './components/SafetyChip';
 import VoicePanel from './components/VoicePanel';
-import { getHotspots, getSafetyScore } from './lib/api';
+import { getHealth, getHotspots, getSafetyScore } from './lib/api';
 import { planSafeRoute } from './lib/useGuardianActions';
 import { hotspotLimitForRadius, hotspotQueryForPoints } from './lib/utils';
 import { DEFAULT_LOCATION } from './mocks/data';
 import { useGuardianStore } from './store/useGuardianStore';
 
 export default function App() {
+  const [apiMode, setApiMode] = useState('…');
   const location = useGuardianStore((s) => s.location);
   const setLocation = useGuardianStore((s) => s.setLocation);
   const setHotspots = useGuardianStore((s) => s.setHotspots);
   const setSafety = useGuardianStore((s) => s.setSafety);
   const routes = useGuardianStore((s) => s.routes);
+
+  useEffect(() => {
+    getHealth()
+      .then((h) => setApiMode(h.mode))
+      .catch(() => setApiMode('offline'));
+  }, []);
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null;
@@ -59,7 +66,10 @@ export default function App() {
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={styles.title}>Guardian</Text>
+        <View>
+          <Text style={styles.title}>Guardian</Text>
+          <Text style={styles.subtitle}>API: {apiMode}</Text>
+        </View>
         <SafetyChip />
       </View>
       <View style={styles.mapSection}>
@@ -89,6 +99,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 20,
     fontWeight: '700',
+  },
+  subtitle: {
+    color: '#64748b',
+    fontSize: 11,
+    marginTop: 2,
   },
   mapSection: {
     flex: 4,

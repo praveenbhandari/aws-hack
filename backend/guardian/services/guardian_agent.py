@@ -192,8 +192,19 @@ async def run_guardian_agent(
 
     agent = get_guardian_agent()
     result = await agent.run(message, deps=deps or GuardianDeps())
+    usage = result.usage()
+    usage_out = None
+    if usage is not None:
+        if hasattr(usage, "model_dump"):
+            usage_out = usage.model_dump()
+        else:
+            usage_out = {
+                "input_tokens": getattr(usage, "input_tokens", None),
+                "output_tokens": getattr(usage, "output_tokens", None),
+                "requests": getattr(usage, "requests", None),
+            }
     return {
         "reply": str(result.output),
         "mode": "agent",
-        "usage": result.usage().model_dump() if result.usage() else None,
+        "usage": usage_out,
     }

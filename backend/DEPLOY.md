@@ -39,7 +39,9 @@ npx @insforge/cli compute deploy backend \
 ```bash
 npx @insforge/cli compute list
 npx @insforge/cli compute logs guardian-api
-npx @insforge/cli compute update 6b1f98d5-95ad-447c-81e3-75fbfb8425b6 --env-set NEBIUS_MODEL=Qwen/Qwen3-32B-Instruct-fast
+npx @insforge/cli compute update 6b1f98d5-95ad-447c-81e3-75fbfb8425b6 \
+  --env-set NEBIUS_MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507 \
+  --env-set NEBIUS_VISION_MODEL=Qwen/Qwen2.5-VL-72B-Instruct
 ```
 
 Cold start: Fly machines may sleep when idle (~1s wake on first request).

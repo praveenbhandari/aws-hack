@@ -56,10 +56,10 @@ class Config:
     nebius_api_key: str = os.environ.get("NEBIUS_API_KEY", "")
     nebius_base_url: str = os.environ.get("NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1")
     nebius_model: str = os.environ.get(
-        "NEBIUS_MODEL", "meta-llama/Meta-Llama-3.1-8B-Instruct-fast"
+        "NEBIUS_MODEL", "Qwen/Qwen3-30B-A3B-Instruct-2507"
     )
     nebius_vision_model: str = os.environ.get(
-        "NEBIUS_VISION_MODEL", "meta-llama/Llama-3.2-11B-Vision-Instruct"
+        "NEBIUS_VISION_MODEL", "Qwen/Qwen2.5-VL-72B-Instruct"
     )
     crime_csv_path: str = os.environ.get(
         "CRIME_CSV_PATH",

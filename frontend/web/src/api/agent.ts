@@ -1,7 +1,8 @@
 import axios from "axios";
+import { GUARDIAN_API_URL } from "../lib/config";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "/api",
+  baseURL: import.meta.env.VITE_API_URL ?? GUARDIAN_API_URL,
   timeout: 60_000,
 });
 

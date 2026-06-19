@@ -55,7 +55,7 @@ async def chat_completions(body: ChatCompletionsBody):
                 extra["tools"] = body.tools
                 extra["tool_choice"] = body.tool_choice or "auto"
             stream_resp = await client.chat.completions.create(
-                model=body.model or config.nebius_model,
+                model=config.nebius_model,
                 messages=body.messages or [],
                 stream=True,
                 **extra,
@@ -65,6 +65,20 @@ async def chat_completions(body: ChatCompletionsBody):
             yield "data: [DONE]\n\n"
         except Exception as e:
             print(f"[chat/completions] {e}")
+            err_chunk = {
+                "id": "guardian-error",
+                "object": "chat.completion.chunk",
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": "Sorry, I'm having trouble reaching the AI service right now.",
+                        },
+                    }
+                ],
+            }
+            yield f"data: {json.dumps(err_chunk)}\n\n"
+            yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         stream(),

@@ -1,8 +1,9 @@
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { NavigationCue } from "../types";
+import { GUARDIAN_API_URL } from "../lib/config";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "/api";
+const API_BASE = import.meta.env.VITE_API_URL ?? GUARDIAN_API_URL;
 
 const SEGMENT_LABEL: Record<string, string> = {
   departure: "Start",
