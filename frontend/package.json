@@ -14,11 +14,13 @@
     "expo-location": "~56.0.18",
     "expo-status-bar": "~56.0.4",
     "react": "19.2.3",
+    "react-dom": "^19.2.3",
     "react-native": "0.85.3",
     "react-native-background-timer": "^2.4.1",
     "react-native-get-random-values": "~1.11.0",
     "react-native-maps": "1.27.2",
     "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
