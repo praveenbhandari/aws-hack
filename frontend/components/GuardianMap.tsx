@@ -7,6 +7,11 @@ import type { NearbyPlace, Route } from '../types/api';
 const SEVERITY_COLOR = ['#9bd', '#7fd17f', '#f2c14e', '#f08a4b', '#e5383b'];
 const ROUTE_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b'];
 
+// Apple Maps (MapKit) renders on iOS with no Google key. Heatmap is Google-only,
+// so hotspots show as severity-colored markers instead. Set to PROVIDER_GOOGLE
+// once "Maps SDK for iOS" is authorized for this app's bundle id.
+const MAP_PROVIDER = undefined;
+
 const PLACE_ICONS: Record<string, string> = {
   restaurant: '🍽️',
   cafe: '☕',
@@ -45,6 +50,23 @@ export default function GuardianMap() {
       })),
     [hotspots],
   );
+
+  // Only surface hotspot markers once a route is calculated, and only the ones
+  // hugging that route (~250 m), so the user sees the real dangers the route is
+  // navigating — not noise around their starting point.
+  const routeHotspots = useMemo(() => {
+    const line = activeRoute?.polyline;
+    if (!line || line.length === 0) return [];
+    const near2 = 250 * 250;
+    return hotspots.filter((h) => {
+      const cos = Math.cos((h.lat * Math.PI) / 180);
+      return line.some((p) => {
+        const dLat = (h.lat - p.lat) * 111_000;
+        const dLng = (h.lng - p.lng) * 111_000 * cos;
+        return dLat * dLat + dLng * dLng <= near2;
+      });
+    });
+  }, [activeRoute, hotspots]);
 
   const displayRoutes: Route[] = useMemo(() => {
     if (mapMode === 'nearby' && activeRoute) return [activeRoute];
@@ -86,7 +108,7 @@ export default function GuardianMap() {
     <MapView
       ref={mapRef}
       style={styles.map}
-      provider={PROVIDER_GOOGLE}
+      provider={MAP_PROVIDER}
       initialRegion={{
         latitude: location.lat,
         longitude: location.lng,
@@ -96,7 +118,7 @@ export default function GuardianMap() {
       showsUserLocation
       showsMyLocationButton
     >
-      {heatmapPoints.length > 0 && (
+      {MAP_PROVIDER === PROVIDER_GOOGLE && heatmapPoints.length > 0 && (
         <Heatmap
           points={heatmapPoints}
           radius={40}
@@ -109,20 +131,26 @@ export default function GuardianMap() {
         />
       )}
 
-      {hotspots.map((h) => {
+      {routeHotspots.map((h) => {
         const avoided = activeRoute?.avoidedHotspots.some((a) => a.id === h.id);
+        const color = avoided ? '#10b981' : SEVERITY_COLOR[Math.min(h.severity, 5) - 1];
         return (
           <Marker
             key={h.id}
             coordinate={{ latitude: h.lat, longitude: h.lng }}
-            pinColor={avoided ? '#10b981' : SEVERITY_COLOR[Math.min(h.severity, 5) - 1]}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
             title={`${h.category} (severity ${h.severity})`}
             description={
               avoided
                 ? 'Avoided by the current safe route'
                 : `Reported ${new Date(h.occurredAt).toLocaleDateString()}`
             }
-          />
+          >
+            <View style={[styles.hotspotMarker, { backgroundColor: color }]}>
+              <Text style={styles.hotspotIcon}>⚠️</Text>
+            </View>
+          </Marker>
         );
       })}
 
@@ -185,6 +213,18 @@ export default function GuardianMap() {
 const styles = StyleSheet.create({
   map: {
     flex: 1,
+  },
+  hotspotMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  hotspotIcon: {
+    fontSize: 11,
   },
   loading: {
     flex: 1,
